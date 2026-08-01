@@ -13,7 +13,9 @@ export type CurrentProfile = {
 /**
  * Perfil do usuário autenticado (join implícito entre o JWT verificado e a
  * linha correspondente em `profiles`). Retorna null se não autenticado ou se
- * ainda não completou o onboarding (sem linha em `profiles`).
+ * a conta ainda não foi provisionada (sem linha em `profiles`) — não deve
+ * acontecer no fluxo normal, já que o profile é criado junto com o usuário
+ * pelo painel administrativo.
  */
 export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const supabase = await createClient();

@@ -2,38 +2,19 @@ import { test, expect } from "@playwright/test";
 import {
   uniqueEmail,
   createConfirmedUser,
+  createTenantWithGestor,
   cleanupTenantByName,
   deleteUserByEmail,
 } from "./helpers/admin";
 
 const SENHA = "SenhaForte123";
 
-// O Supabase (plano gratuito) tem um rate limit bem baixo de envio de e-mail
-// de confirmação (poucos e-mails por hora no serviço embutido). Só este teste
-// exercita o formulário real de /cadastro (que dispara um e-mail de verdade
-// via supabase.auth.signUp) — os demais preparam o usuário via Admin API (sem
-// e-mail) para poder rodar quantas vezes for preciso sem esbarrar no limite.
-// Se este teste falhar com "Não foi possível criar a conta" mesmo com dados
-// válidos, é provável que a cota de e-mail da hora tenha sido consumida —
-// não é um bug da aplicação; rode de novo mais tarde ou configure um provedor
-// SMTP próprio no projeto Supabase (ver Fase 4 pós-MVP do plano).
-test("cadastro pelo formulário real envia e-mail de confirmação", async ({ page }) => {
-  const email = uniqueEmail("cadastro-form");
-  try {
-    await page.goto("/cadastro");
-    await page.getByLabel("E-mail").fill(email);
-    await page.getByLabel("Senha", { exact: true }).fill(SENHA);
-    await page.getByLabel("Confirme a senha").fill(SENHA);
-    await page.getByRole("button", { name: "Criar conta" }).click();
-    await expect(page.getByText("Enviamos um link de confirmação")).toBeVisible({
-      timeout: 10_000,
-    });
-  } finally {
-    await deleteUserByEmail(email).catch(() => {});
-  }
-});
-
-test.describe("Fase 0 — onboarding, equipe, tema (usuário preparado via Admin API)", () => {
+// Não há autocadastro no app: revendas são provisionadas pelo dono da
+// plataforma (painel administrativo, ainda não construído). Aqui simulamos
+// exatamente esse provisionamento via Admin API + inserts diretos
+// (createTenantWithGestor), como o painel fará — o teste só exercita o que o
+// cliente final realmente vê: login com a senha temporária.
+test.describe("Fase 0 — login, equipe, tema (tenant provisionado como o painel admin fará)", () => {
   let gestorEmail: string;
   let vendedorEmail: string;
   let nomeRevenda: string;
@@ -42,7 +23,14 @@ test.describe("Fase 0 — onboarding, equipe, tema (usuário preparado via Admin
     gestorEmail = uniqueEmail("gestor");
     vendedorEmail = uniqueEmail("vendedor");
     nomeRevenda = `E2E Revenda ${Date.now()}`;
-    await createConfirmedUser(gestorEmail, SENHA);
+
+    const userId = await createConfirmedUser(gestorEmail, SENHA);
+    await createTenantWithGestor({
+      userId,
+      nomeRevenda,
+      nomeGestor: "Gestor E2E",
+      nomeLoja: "Matriz",
+    });
   });
 
   test.afterEach(async () => {
@@ -51,24 +39,12 @@ test.describe("Fase 0 — onboarding, equipe, tema (usuário preparado via Admin
     await deleteUserByEmail(vendedorEmail).catch(() => {});
   });
 
-  test("login -> onboarding -> equipe -> tema -> logout", async ({ page }) => {
-    await test.step("login redireciona para onboarding (perfil ainda não existe)", async () => {
+  test("login -> dashboard -> equipe -> tema -> logout", async ({ page }) => {
+    await test.step("login vai direto para o dashboard (conta já provisionada)", async () => {
       await page.goto("/login");
       await page.getByLabel("E-mail").fill(gestorEmail);
       await page.getByLabel("Senha").fill(SENHA);
       await page.getByRole("button", { name: "Entrar" }).click();
-      await expect(page).toHaveURL(/\/onboarding/);
-    });
-
-    await test.step("onboarding cria tenant + loja + perfil gestor", async () => {
-      await page.getByLabel("Nome da revenda").fill(nomeRevenda);
-      await page.getByLabel("Seu nome").fill("Gestor E2E");
-      await page.getByLabel("Nome da loja").fill("Matriz");
-      await page.getByLabel("Cidade").fill("Belo Horizonte");
-      await page.getByLabel("UF").selectOption("MG");
-      await page
-        .getByRole("button", { name: "Começar a usar o Revenda 360" })
-        .click();
       await expect(page).toHaveURL(/\/dashboard/);
       await expect(page.getByText("Esta tela existe e é navegável")).toBeVisible();
     });
@@ -105,14 +81,6 @@ test.describe("Fase 0 — onboarding, equipe, tema (usuário preparado via Admin
     await page.getByLabel("E-mail").fill(gestorEmail);
     await page.getByLabel("Senha").fill(SENHA);
     await page.getByRole("button", { name: "Entrar" }).click();
-    await expect(page).toHaveURL(/\/onboarding/);
-
-    await page.getByLabel("Nome da revenda").fill(nomeRevenda);
-    await page.getByLabel("Seu nome").fill("Gestor E2E");
-    await page.getByLabel("Nome da loja").fill("Matriz");
-    await page
-      .getByRole("button", { name: "Começar a usar o Revenda 360" })
-      .click();
     await expect(page).toHaveURL(/\/dashboard/);
 
     await page.goto("/equipe");
@@ -130,7 +98,6 @@ test.describe("Fase 0 — onboarding, equipe, tema (usuário preparado via Admin
     await page.getByLabel("Senha").fill(senhaTemporaria!.trim());
     await page.getByRole("button", { name: "Entrar" }).click();
 
-    // Vendedor já tem perfil (criado pelo gestor) -> vai direto pro dashboard, não onboarding.
     await expect(page).toHaveURL(/\/dashboard/);
   });
 });

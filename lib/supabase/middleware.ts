@@ -2,9 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database.types";
 
-const AUTH_ONLY_PATHS = ["/login", "/cadastro"];
-const PASSTHROUGH_PREFIXES = ["/auth/"];
+const AUTH_ONLY_PATHS = ["/login"];
 
+/**
+ * Não há autocadastro: contas são provisionadas pelo dono da plataforma (via
+ * painel administrativo, ainda não construído). O gate aqui é só autenticação
+ * — se o usuário estiver autenticado mas sem profile (situação anômala, não
+ * esperada no fluxo normal de provisionamento), o layout de `(app)` trata
+ * isso ao carregar a rota, redirecionando de volta para /login.
+ */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -30,50 +36,19 @@ export async function updateSession(request: NextRequest) {
   );
 
   const { pathname } = request.nextUrl;
-
-  if (PASSTHROUGH_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return response;
-  }
-
   const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims.sub;
+  const isAuthenticated = Boolean(claims?.claims.sub);
+  const isAuthOnlyPath = AUTH_ONLY_PATHS.some((p) => pathname.startsWith(p));
 
-  if (!userId) {
-    if (AUTH_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
-      return response;
-    }
+  if (!isAuthenticated && !isAuthOnlyPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Autenticado — verifica se já completou o onboarding (tem profile).
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  const hasProfile = Boolean(profile);
-
-  if (pathname.startsWith("/onboarding")) {
-    if (hasProfile) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
-    return response;
-  }
-
-  if (AUTH_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
+  if (isAuthenticated && isAuthOnlyPath) {
     const url = request.nextUrl.clone();
-    url.pathname = hasProfile ? "/dashboard" : "/onboarding";
-    return NextResponse.redirect(url);
-  }
-
-  if (!hasProfile) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/onboarding";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

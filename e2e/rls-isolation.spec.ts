@@ -2,27 +2,21 @@ import { test, expect } from "@playwright/test";
 import {
   uniqueEmail,
   createConfirmedUser,
+  createTenantWithGestor,
   cleanupTenantByName,
   deleteUserByEmail,
 } from "./helpers/admin";
 
 const SENHA = "SenhaForte123";
 
-async function logarEOnboardComoGestor(
+async function logarComoGestor(
   page: import("@playwright/test").Page,
   email: string,
-  nomeRevenda: string,
 ) {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(SENHA);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).toHaveURL(/\/onboarding/);
-
-  await page.getByLabel("Nome da revenda").fill(nomeRevenda);
-  await page.getByLabel("Seu nome").fill("Gestor E2E");
-  await page.getByLabel("Nome da loja").fill("Matriz");
-  await page.getByRole("button", { name: "Começar a usar o Revenda 360" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
@@ -38,8 +32,22 @@ test.describe("RLS — isolamento entre tenants", () => {
     emailB = uniqueEmail("tenantB");
     tenantA = `E2E Isolamento A ${stamp}`;
     tenantB = `E2E Isolamento B ${stamp}`;
-    await createConfirmedUser(emailA, SENHA);
-    await createConfirmedUser(emailB, SENHA);
+
+    const userIdA = await createConfirmedUser(emailA, SENHA);
+    await createTenantWithGestor({
+      userId: userIdA,
+      nomeRevenda: tenantA,
+      nomeGestor: "Gestor E2E",
+      nomeLoja: "Matriz",
+    });
+
+    const userIdB = await createConfirmedUser(emailB, SENHA);
+    await createTenantWithGestor({
+      userId: userIdB,
+      nomeRevenda: tenantB,
+      nomeGestor: "Gestor E2E",
+      nomeLoja: "Matriz",
+    });
   });
 
   test.afterEach(async () => {
@@ -50,21 +58,18 @@ test.describe("RLS — isolamento entre tenants", () => {
   });
 
   test("um tenant não vê a equipe/perfis de outro tenant", async ({ page }) => {
-    await test.step("cria e configura tenant A", async () => {
-      await logarEOnboardComoGestor(page, emailA, tenantA);
-    });
-
     await test.step("tenant A vê só a si mesmo na Equipe", async () => {
+      await logarComoGestor(page, emailA);
       await page.goto("/equipe");
       await expect(page.getByRole("cell", { name: "Gestor E2E" })).toBeVisible();
       const rows = page.locator("tbody tr");
       await expect(rows).toHaveCount(1);
     });
 
-    await test.step("sai e cria tenant B", async () => {
+    await test.step("sai e loga no tenant B", async () => {
       await page.getByRole("button", { name: "Sair" }).click();
       await expect(page).toHaveURL(/\/login/);
-      await logarEOnboardComoGestor(page, emailB, tenantB);
+      await logarComoGestor(page, emailB);
     });
 
     await test.step("tenant B não enxerga o gestor do tenant A", async () => {

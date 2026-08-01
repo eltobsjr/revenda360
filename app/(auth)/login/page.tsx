@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { login } from "../actions";
 import { AUTH_INITIAL_STATE } from "../auth-state";
 import { Button } from "@/components/ui/button";
@@ -37,10 +36,8 @@ export default function LoginPage() {
           {pending ? "Entrando…" : "Entrar"}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
-          Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="font-medium text-primary">
-            Criar revenda
-          </Link>
+          Acesso liberado pela equipe do Revenda 360. Esqueceu a senha? Fale com
+          quem administra sua revenda.
         </p>
       </form>
     </AuthSplitLayout>

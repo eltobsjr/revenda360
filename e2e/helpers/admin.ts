@@ -38,13 +38,65 @@ export async function createConfirmedUser(email: string, password: string) {
   return data.user.id;
 }
 
-export async function confirmEmail(email: string) {
+/**
+ * Provisiona um tenant completo (tenant + tenant_config + loja + profile
+ * gestor) para um usuário já criado — o mesmo trabalho que o painel
+ * administrativo (futuro) fará ao cadastrar uma revenda nova. Não existe mais
+ * fluxo de autocadastro/onboarding no app: quem cria a revenda é o dono da
+ * plataforma, e o cliente só faz login com a senha temporária recebida.
+ * Usa o client com service role, que ignora RLS, espelhando exatamente o que
+ * o painel administrativo vai fazer.
+ */
+export async function createTenantWithGestor({
+  userId,
+  nomeRevenda,
+  nomeGestor,
+  nomeLoja,
+}: {
+  userId: string;
+  nomeRevenda: string;
+  nomeGestor: string;
+  nomeLoja: string;
+}) {
   const admin = createTestAdminClient();
-  const { data } = await admin.auth.admin.listUsers();
-  const user = data.users.find((u) => u.email === email);
-  if (!user) throw new Error(`Usuário de teste não encontrado: ${email}`);
-  await admin.auth.admin.updateUserById(user.id, { email_confirm: true });
-  return user.id;
+
+  const { data: tenant, error: tenantError } = await admin
+    .from("tenants")
+    .insert({ nome: nomeRevenda })
+    .select("id")
+    .single();
+  if (tenantError || !tenant) {
+    throw new Error(`Falha ao criar tenant de teste: ${tenantError?.message}`);
+  }
+
+  const { error: configError } = await admin
+    .from("tenant_config")
+    .insert({ tenant_id: tenant.id });
+  if (configError) {
+    throw new Error(`Falha ao criar tenant_config de teste: ${configError.message}`);
+  }
+
+  const { data: loja, error: lojaError } = await admin
+    .from("lojas")
+    .insert({ tenant_id: tenant.id, nome: nomeLoja })
+    .select("id")
+    .single();
+  if (lojaError || !loja) {
+    throw new Error(`Falha ao criar loja de teste: ${lojaError?.message}`);
+  }
+
+  const { error: profileError } = await admin.from("profiles").insert({
+    id: userId,
+    tenant_id: tenant.id,
+    loja_id: loja.id,
+    nome: nomeGestor,
+    role: "gestor",
+  });
+  if (profileError) {
+    throw new Error(`Falha ao criar profile gestor de teste: ${profileError.message}`);
+  }
+
+  return { tenantId: tenant.id, lojaId: loja.id };
 }
 
 /** Remove o tenant (cascata cobre profiles/lojas/tenant_config) e os auth users criados no teste. */
