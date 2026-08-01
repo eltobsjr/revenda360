@@ -281,6 +281,30 @@ export type Database = {
           },
         ];
       };
+      clientes: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          nome: string;
+          cpf: string | null;
+          whatsapp: string | null;
+          email: string | null;
+          cidade: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          nome: string;
+          cpf?: string | null;
+          whatsapp?: string | null;
+          email?: string | null;
+          cidade?: string | null;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["clientes"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
