@@ -7,6 +7,17 @@
 
 export type UserRole = "gestor" | "vendedor" | "financeiro";
 
+export type TipoVeiculo = "carro" | "moto";
+
+export type StatusVeiculo =
+  | "Disponível"
+  | "Em preparação"
+  | "Reservado"
+  | "Vendido"
+  | "Consignado"
+  | "Repasse"
+  | "Devolvido";
+
 export type Database = {
   public: {
     Tables: {
@@ -93,6 +104,182 @@ export type Database = {
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
         Relationships: [];
+      };
+      veiculos: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          loja_id: string | null;
+          tipo: TipoVeiculo;
+          placa: string;
+          renavam: string | null;
+          chassi: string | null;
+          numero_motor: string | null;
+          uf_emplacamento: string | null;
+          municipio_emplacamento: string | null;
+          marca: string;
+          modelo: string;
+          versao: string | null;
+          ano_fab: number | null;
+          ano_mod: number | null;
+          cor: string | null;
+          combustivel: string | null;
+          km: number;
+          procedencia: string;
+          categoria: string;
+          proprietarios_anteriores: number;
+          crlv_em_dia: boolean;
+          ipva_status: string;
+          ipva_valor: number | null;
+          ipva_ano: number | null;
+          licenciamento_em_dia: boolean;
+          multas_valor: number;
+          gravame: boolean;
+          gravame_financeira: string | null;
+          gravame_valor_quitacao: number | null;
+          crv_em_maos: boolean;
+          atpve: boolean;
+          laudo_cautelar: string;
+          historico_leilao_sinistro: boolean;
+          chave_reserva: boolean;
+          manual_proprietario: boolean;
+          data_entrada: string;
+          origem: string;
+          fornecedor: string | null;
+          valor_compra: number;
+          forma_pag_compra: string | null;
+          valor_fipe: number | null;
+          preco_venda: number;
+          preco_financiamento: number | null;
+          preco_minimo: number | null;
+          descricao_anuncio: string | null;
+          portais_publicar: string[];
+          especificacoes: Record<string, unknown>;
+          status: StatusVeiculo;
+          observacoes: string | null;
+          criado_em: string;
+          atualizado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          loja_id?: string | null;
+          tipo: TipoVeiculo;
+          placa: string;
+          renavam?: string | null;
+          chassi?: string | null;
+          numero_motor?: string | null;
+          uf_emplacamento?: string | null;
+          municipio_emplacamento?: string | null;
+          marca: string;
+          modelo: string;
+          versao?: string | null;
+          ano_fab?: number | null;
+          ano_mod?: number | null;
+          cor?: string | null;
+          combustivel?: string | null;
+          km?: number;
+          procedencia?: string;
+          categoria?: string;
+          proprietarios_anteriores?: number;
+          crlv_em_dia?: boolean;
+          ipva_status?: string;
+          ipva_valor?: number | null;
+          ipva_ano?: number | null;
+          licenciamento_em_dia?: boolean;
+          multas_valor?: number;
+          gravame?: boolean;
+          gravame_financeira?: string | null;
+          gravame_valor_quitacao?: number | null;
+          crv_em_maos?: boolean;
+          atpve?: boolean;
+          laudo_cautelar?: string;
+          historico_leilao_sinistro?: boolean;
+          chave_reserva?: boolean;
+          manual_proprietario?: boolean;
+          data_entrada?: string;
+          origem?: string;
+          fornecedor?: string | null;
+          valor_compra?: number;
+          forma_pag_compra?: string | null;
+          valor_fipe?: number | null;
+          preco_venda?: number;
+          preco_financiamento?: number | null;
+          preco_minimo?: number | null;
+          descricao_anuncio?: string | null;
+          portais_publicar?: string[];
+          especificacoes?: Record<string, unknown>;
+          status?: StatusVeiculo;
+          observacoes?: string | null;
+          criado_em?: string;
+          atualizado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["veiculos"]["Insert"]>;
+        Relationships: [];
+      };
+      custos_veiculo: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          veiculo_id: string;
+          categoria: string;
+          descricao: string | null;
+          fornecedor: string | null;
+          valor: number;
+          data: string;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          veiculo_id: string;
+          categoria: string;
+          descricao?: string | null;
+          fornecedor?: string | null;
+          valor: number;
+          data?: string;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["custos_veiculo"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "custos_veiculo_veiculo_id_fkey";
+            columns: ["veiculo_id"];
+            isOneToOne: false;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      veiculo_fotos: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          veiculo_id: string;
+          storage_path: string;
+          ordem: number;
+          capa: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          veiculo_id: string;
+          storage_path: string;
+          ordem?: number;
+          capa?: boolean;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["veiculo_fotos"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "veiculo_fotos_veiculo_id_fkey";
+            columns: ["veiculo_id"];
+            isOneToOne: false;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

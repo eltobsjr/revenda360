@@ -99,6 +99,98 @@ export async function createTenantWithGestor({
   return { tenantId: tenant.id, lojaId: loja.id };
 }
 
+/** Vincula um usuário já criado como membro (vendedor/financeiro) de um tenant já existente. */
+export async function adicionarMembro({
+  userId,
+  tenantId,
+  lojaId,
+  nome,
+  role,
+}: {
+  userId: string;
+  tenantId: string;
+  lojaId: string;
+  nome: string;
+  role: "vendedor" | "financeiro";
+}) {
+  const admin = createTestAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .insert({ id: userId, tenant_id: tenantId, loja_id: lojaId, nome, role });
+  if (error) {
+    throw new Error(`Falha ao vincular membro de teste: ${error.message}`);
+  }
+}
+
+type VeiculoSeed = {
+  tipo: "carro" | "moto";
+  placa: string;
+  marca: string;
+  modelo: string;
+  valorCompra: number;
+  precoVenda: number;
+  status?:
+    | "Disponível"
+    | "Em preparação"
+    | "Reservado"
+    | "Vendido"
+    | "Consignado"
+    | "Repasse"
+    | "Devolvido";
+  dataEntrada?: string;
+  custo?: number;
+};
+
+/** Insere alguns veículos (+ custo lançado opcional) direto no tenant, para testar Estoque/Ficha sem depender da tela de Entrada de veículo (Fase 2, ainda não construída). */
+export async function seedVeiculos(
+  tenantId: string,
+  lojaId: string,
+  veiculos: VeiculoSeed[],
+) {
+  const admin = createTestAdminClient();
+  const ids: string[] = [];
+
+  for (const v of veiculos) {
+    const { data, error } = await admin
+      .from("veiculos")
+      .insert({
+        tenant_id: tenantId,
+        loja_id: lojaId,
+        tipo: v.tipo,
+        placa: v.placa,
+        marca: v.marca,
+        modelo: v.modelo,
+        valor_compra: v.valorCompra,
+        preco_venda: v.precoVenda,
+        status: v.status ?? "Disponível",
+        data_entrada: v.dataEntrada ?? new Date().toISOString().slice(0, 10),
+        especificacoes:
+          v.tipo === "carro"
+            ? { cambio: "Manual", carroceria: "Hatch", portas: 4, opcionais: [] }
+            : { cilindradaCc: 160, tipo: "Street", acessorios: [] },
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Falha ao inserir veículo de teste ${v.placa}: ${error?.message}`);
+    }
+    ids.push(data.id);
+
+    if (v.custo) {
+      await admin.from("custos_veiculo").insert({
+        tenant_id: tenantId,
+        veiculo_id: data.id,
+        categoria: "Mecânica",
+        valor: v.custo,
+        data: v.dataEntrada ?? new Date().toISOString().slice(0, 10),
+      });
+    }
+  }
+
+  return ids;
+}
+
 /** Remove o tenant (cascata cobre profiles/lojas/tenant_config) e os auth users criados no teste. */
 export async function cleanupTenantByName(nomeRevenda: string) {
   const admin = createTestAdminClient();
