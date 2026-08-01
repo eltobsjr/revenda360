@@ -18,6 +18,19 @@ export type StatusVeiculo =
   | "Repasse"
   | "Devolvido";
 
+export type StatusVenda = "confirmada" | "cancelada";
+
+export type TipoPagamento =
+  | "dinheiro"
+  | "pix"
+  | "cartao"
+  | "transferencia"
+  | "troca"
+  | "financiamento_bancario"
+  | "crediario";
+
+export type StatusParcela = "A vencer" | "Paga" | "Atrasada" | "Parcial" | "Renegociada";
+
 export type Database = {
   public: {
     Tables: {
@@ -305,6 +318,165 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["clientes"]["Insert"]>;
         Relationships: [];
       };
+      vendas: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          veiculo_id: string;
+          cliente_id: string | null;
+          cliente_nome_avulso: string | null;
+          vendedor_id: string;
+          data_venda: string;
+          valor_venda: number;
+          desconto: number;
+          valor_final: number;
+          comissao_pct: number;
+          comissao_valor: number;
+          garantia: string | null;
+          observacoes: string | null;
+          status: StatusVenda;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          veiculo_id: string;
+          cliente_id?: string | null;
+          cliente_nome_avulso?: string | null;
+          vendedor_id: string;
+          data_venda?: string;
+          valor_venda: number;
+          desconto?: number;
+          valor_final: number;
+          comissao_pct?: number;
+          comissao_valor?: number;
+          garantia?: string | null;
+          observacoes?: string | null;
+          status?: StatusVenda;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["vendas"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "vendas_veiculo_id_fkey";
+            columns: ["veiculo_id"];
+            isOneToOne: false;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "vendas_cliente_id_fkey";
+            columns: ["cliente_id"];
+            isOneToOne: false;
+            referencedRelation: "clientes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      venda_pagamentos: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          venda_id: string;
+          tipo: TipoPagamento;
+          valor: number;
+          detalhes: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          venda_id: string;
+          tipo: TipoPagamento;
+          valor: number;
+          detalhes?: Record<string, unknown>;
+        };
+        Update: Partial<Database["public"]["Tables"]["venda_pagamentos"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "venda_pagamentos_venda_id_fkey";
+            columns: ["venda_id"];
+            isOneToOne: false;
+            referencedRelation: "vendas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      contratos_crediario: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          venda_id: string;
+          cliente_id: string | null;
+          veiculo_id: string;
+          valor_total: number;
+          taxa_juros_mensal: number;
+          qtd_parcelas: number;
+          data_primeiro_vencimento: string;
+          status: string;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          venda_id: string;
+          cliente_id?: string | null;
+          veiculo_id: string;
+          valor_total: number;
+          taxa_juros_mensal?: number;
+          qtd_parcelas: number;
+          data_primeiro_vencimento: string;
+          status?: string;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["contratos_crediario"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "contratos_crediario_venda_id_fkey";
+            columns: ["venda_id"];
+            isOneToOne: false;
+            referencedRelation: "vendas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      parcelas: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          contrato_id: string;
+          numero: number;
+          vencimento: string;
+          valor: number;
+          valor_pago: number;
+          status: StatusParcela;
+          data_pagamento: string | null;
+          desconto_aplicado: number;
+          juros_multa_aplicado: number;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          contrato_id: string;
+          numero: number;
+          vencimento: string;
+          valor: number;
+          valor_pago?: number;
+          status?: StatusParcela;
+          data_pagamento?: string | null;
+          desconto_aplicado?: number;
+          juros_multa_aplicado?: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["parcelas"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_contrato_id_fkey";
+            columns: ["contrato_id"];
+            isOneToOne: false;
+            referencedRelation: "contratos_crediario";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -334,6 +506,12 @@ export type Database = {
       current_role: {
         Args: Record<string, never>;
         Returns: UserRole;
+      };
+      fechar_venda: {
+        Args: {
+          payload: Record<string, unknown>;
+        };
+        Returns: string;
       };
     };
   };

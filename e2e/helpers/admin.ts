@@ -191,6 +191,24 @@ export async function seedVeiculos(
   return ids;
 }
 
+/** Insere um cliente direto no tenant, para testar telas que dependem de um cliente já cadastrado (ex.: Nova venda). */
+export async function seedCliente(
+  tenantId: string,
+  cliente: { nome: string; cpf?: string },
+) {
+  const admin = createTestAdminClient();
+  const { data, error } = await admin
+    .from("clientes")
+    .insert({ tenant_id: tenantId, nome: cliente.nome, cpf: cliente.cpf ?? null })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Falha ao inserir cliente de teste ${cliente.nome}: ${error?.message}`);
+  }
+  return data.id;
+}
+
 /** Remove o tenant (cascata cobre profiles/lojas/tenant_config) e os auth users criados no teste. */
 export async function cleanupTenantByName(nomeRevenda: string) {
   const admin = createTestAdminClient();
