@@ -1,0 +1,30 @@
+---
+name: project-arquitetura-supabase
+description: Decisões-chave da arquitetura multi-tenant Supabase do Revenda360 (Fases 0-4)
+metadata: 
+  node_type: memory
+  type: project
+  originSessionId: c7f3581a-eded-4a56-8f13-349235ad7367
+  modified: 2026-08-03T16:16:11.668Z
+---
+
+Schema multi-tenant: `tenants`, `tenant_config` (multa/mora/margem mínima configuráveis por tenant), `lojas`, `profiles` (role enum: gestor/vendedor/financeiro, vinculado a `auth.users`). RLS via função `current_tenant_id()` (subquery em `profiles`, não custom JWT claims — decisão deliberada de simplicidade para o MVP).
+
+Duas funções Postgres `security definer` resolvem o problema de bootstrapping (criar a primeira linha antes de existir profile para autorizar via RLS): `onboarding_criar_tenant` (cria tenant+loja+profile gestor) e `criar_membro_equipe` (vincula profile a um usuário já criado via Admin API).
+
+Ocultação de campos sensíveis (preço mínimo, margem, custo de aquisição) para quem não é gestor: RLS é por linha, não por coluna — mecanismo principal é filtragem em `lib/data/*` no servidor, não em view mascarada (isso fica de defesa em profundidade só se necessário no futuro).
+
+Ambiguidade resolvida do protótipo: "preço mínimo" no wizard de venda usava `custoTotal * 1.08` hardcoded, mas existe campo cadastrável `entradaForm.precoMinimo`. Regra adotada: `minimo_efetivo = COALESCE(veiculo.preco_minimo, custo_total * (1 + margem_minima_pct_default/100))`, com o percentual configurável por tenant.
+
+Sem Supabase CLI conectada nem Docker local — usuário pediu explicitamente para não conectar CLI. Migrations são arquivos `.sql` em `supabase/migrations/`, geradas pelo Claude e aplicadas manualmente pelo usuário no SQL Editor do dashboard. `types/database.types.ts` é escrito à mão, não gerado. Depois de gerar uma migration nova, sempre confirmar com o usuário que ele já rodou antes de tentar usar as tabelas (dá pra checar direto via um client de service role tentando um `select` na tabela nova).
+
+**Schema evoluiu nas Fases 1-4** (todas seguindo o mesmo padrão tenant_id + RLS): `veiculos`/`custos_veiculo`/`veiculo_fotos` (Fase 1, com bucket de Storage privado por tenant), `clientes` (Fase 3, índice único parcial por CPF), `vendas`/`venda_pagamentos`/`contratos_crediario`/`parcelas` (Fase 4). A operação "fechar venda" é uma função Postgres transacional (`fechar_venda(payload jsonb)`) — mas ao contrário das funções de bootstrap da Fase 0 (que precisam de `security definer` porque rodam antes de existir profile), essa roda como `security invoker`: o usuário chamando já tem profile/tenant, então as policies de `tenant_isolation` de cada tabela já bastam. Regra prática: só usar `security definer` quando a operação precisa contornar RLS num estado ainda sem profile; do contrário, `invoker` é mais seguro (least privilege).
+
+Ambiguidade resolvida na Fase 4: a fórmula de juros do crediário próprio (`gerarParcelas`) só ficou clara lendo o **código-fonte** do protótipo, não os dados de exemplo (`revenda-data.js`) — os dados de exemplo eram parcelas redondas digitadas à mão, sem refletir a fórmula real (`valorComJuros = valorBase * (1 + taxa/100 * qtd/2)`). Mesmo padrão de investigação que resolveu a ambiguidade do preço mínimo na Fase 1: quando dado de exemplo e código parecem discordar, o código é a fonte da verdade.
+
+**Fase 5 (Contas a receber, 2026-08-03)**: nenhuma tabela nova — `contratos_crediario`/`parcelas` já existiam da Fase 4. Migration `0006` só adicionou `parcelas.forma_pagamento` (reaproveita o enum `tipo_pagamento`). Status "Atrasada" de parcela **nunca é persistido** — é sempre derivado em tempo de leitura (`statusEfetivo` em `lib/domain/juros.ts`) comparando `vencimento` com a data atual, porque o projeto não tem infraestrutura de cron/job. Baixa de parcela é feita por Server Action com update direto guardado por `.neq("status", "Paga")` (idempotente contra clique duplo), não por função Postgres — mais simples que o padrão `fechar_venda` da Fase 4 porque é uma escrita de tabela única, não uma transação multi-tabela.
+
+**Fase 6 (Dashboard, 2026-08-03)**: também sem tabela nova — é uma camada de agregação em cima de `veiculos`/`vendas`/`parcelas`. Padrão estabelecido para joins que a Fase 4 não havia previsto no `types/database.types.ts` (escrito à mão): quando um `select` do Supabase precisaria de embed aninhado em 2+ níveis (ex.: `parcelas → contratos_crediario → clientes/veiculos`), preferir resolver os nomes com consultas `.in(ids)` separadas e juntar em JS (`lib/data/contas-receber.ts`), em vez de lutar para tipar corretamente um embed profundo contra o arquivo de tipos manual — mais simples de tipar e testar, e o volume de dados de uma revenda não justifica a otimização de um único round-trip. "Últimas movimentações" do Dashboard é um feed calculado on-the-fly combinando 3 fontes (vendas, entradas de veículo, baixas de parcela) — não existe (nem vai existir) uma tabela de log de atividades.
+
+**Why:** Registrado após a sessão de construção da Fase 0, que envolveu um agente de pesquisa (leitura completa do protótipo) e um agente de planejamento (desenho da arquitetura) antes da implementação; atualizado ao longo das Fases 1-6 conforme o schema cresceu.
+**How to apply:** Ao criar tabelas novas em fases futuras, seguir o mesmo padrão (tenant_id + RLS via `current_tenant_id()`). Ao gerar novas migrations, lembrar que o usuário vai rodá-las manualmente — sempre entregar como arquivo `.sql` completo e idempotente quando possível, nunca assumir que uma CLI vai aplicá-las. Para operações transacionais multi-tabela (como `fechar_venda`), preferir uma função Postgres a uma sequência de inserts do Server Action; para update de tabela única, um guard condicional no `.update()` já basta. Para status que mudam só com o tempo (não por ação do usuário), considerar derivar em leitura em vez de persistir, se não houver cron disponível. Ver `Revenda360SecondBrain/decisions/2026-08-01 - Arquitetura inicial multi-tenant.md` no repositório para o racional completo.

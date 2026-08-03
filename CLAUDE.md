@@ -6,11 +6,16 @@
 
 Ao iniciar qualquer conversa neste projeto:
 
-1. Leia o índice de memória: `~/.claude/projects/-home-eltobsjr-dev-pessoal-homies-enzo-revenda360/memory/MEMORY.md`
-   É um índice — siga os links para os arquivos relevantes à tarefa atual.
+1. Leia o índice de memória persistente do Claude Code (local, fora do
+   repositório) na pasta de memória deste projeto. Se essa pasta ainda não
+   existir ou estiver vazia (ex.: clone novo do repositório em outra
+   máquina/usuário), use em vez disso `Revenda360SecondBrain/claude-memory/MEMORY.md`
+   — é uma cópia exportada da memória, versionada no repositório exatamente
+   para dar contexto completo a um clone novo. É um índice — siga os links
+   para os arquivos relevantes à tarefa atual.
 
 2. Leia o devtrack mais recente:
-   `ls /home/eltobsjr/dev/pessoal/homies/enzo/revenda360/Revenda360SecondBrain/devtrack/ | sort | tail -1`
+   `ls Revenda360SecondBrain/devtrack/ | sort | tail -1`
    e leia o arquivo retornado. Isso garante continuidade: o que foi feito,
    decisões tomadas e pendências abertas na última sessão.
 
