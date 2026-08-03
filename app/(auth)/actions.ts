@@ -19,13 +19,29 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error, data } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: "E-mail ou senha inválidos." };
   }
 
-  redirect("/dashboard");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profile) {
+    redirect("/dashboard");
+  }
+
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
+  if (isAdmin) {
+    redirect("/admin");
+  }
+
+  await supabase.auth.signOut();
+  return { error: "Esta conta não tem acesso configurado. Contate o suporte." };
 }
 
 export async function logout() {

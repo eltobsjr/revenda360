@@ -58,3 +58,20 @@ export async function requireRole(roles: UserRole[]): Promise<CurrentProfile> {
   }
   return profile;
 }
+
+/**
+ * O dono da plataforma não tem linha em `profiles` (não pertence a nenhum
+ * tenant) — a identidade dele é a allowlist `platform_admins`, checada no
+ * banco via a função `is_platform_admin()` (security definer).
+ */
+export async function isPlatformAdmin(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("is_platform_admin");
+  return data === true;
+}
+
+export async function requirePlatformAdmin(): Promise<void> {
+  if (!(await isPlatformAdmin())) {
+    throw new Error("Sem permissão para executar esta ação");
+  }
+}

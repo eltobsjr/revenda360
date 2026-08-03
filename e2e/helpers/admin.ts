@@ -99,6 +99,20 @@ export async function createTenantWithGestor({
   return { tenantId: tenant.id, lojaId: loja.id };
 }
 
+/**
+ * Registra um usuário já criado como dono da plataforma, inserindo direto
+ * em `platform_admins` (mesma tabela allowlist que o app usa para checar
+ * `is_platform_admin()`). Usa o client com service role porque a tabela não
+ * tem nenhuma policy de insert (só é gerenciada manualmente, fora do app).
+ */
+export async function seedPlatformAdmin(userId: string) {
+  const admin = createTestAdminClient();
+  const { error } = await admin.from("platform_admins").insert({ user_id: userId });
+  if (error) {
+    throw new Error(`Falha ao registrar platform admin de teste: ${error.message}`);
+  }
+}
+
 /** Vincula um usuário já criado como membro (vendedor/financeiro) de um tenant já existente. */
 export async function adicionarMembro({
   userId,

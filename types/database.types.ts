@@ -52,6 +52,18 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["tenants"]["Insert"]>;
         Relationships: [];
       };
+      platform_admins: {
+        Row: {
+          user_id: string;
+          criado_em: string;
+        };
+        Insert: {
+          user_id: string;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_admins"]["Insert"]>;
+        Relationships: [];
+      };
       tenant_config: {
         Row: {
           tenant_id: string;
@@ -496,8 +508,9 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
-      onboarding_criar_tenant: {
+      provisionar_revenda: {
         Args: {
+          p_user_id: string;
           p_nome_revenda: string;
           p_nome_usuario: string;
           p_loja_nome: string;
@@ -505,6 +518,10 @@ export type Database = {
           p_loja_uf?: string | null;
         };
         Returns: string;
+      };
+      is_platform_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
       };
       criar_membro_equipe: {
         Args: {
