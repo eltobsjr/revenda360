@@ -209,6 +209,87 @@ export async function seedCliente(
   return data.id;
 }
 
+/**
+ * Insere direto uma venda + contrato de crediário + parcelas, para testar
+ * Contas a receber (Fase 5) sem depender do wizard de Nova venda (Fase 4)
+ * para controlar datas de vencimento no passado (parcelas em atraso).
+ */
+export async function seedContratoCrediario(
+  tenantId: string,
+  params: {
+    veiculoId: string;
+    vendedorId: string;
+    clienteId?: string | null;
+    clienteNomeAvulso?: string;
+    parcelas: {
+      numero: number;
+      vencimento: string;
+      valor: number;
+      status?: "A vencer" | "Paga" | "Atrasada" | "Parcial" | "Renegociada";
+      valorPago?: number;
+      dataPagamento?: string;
+    }[];
+  },
+) {
+  const admin = createTestAdminClient();
+  const valorTotal = params.parcelas.reduce((soma, p) => soma + p.valor, 0);
+
+  const { data: venda, error: vendaError } = await admin
+    .from("vendas")
+    .insert({
+      tenant_id: tenantId,
+      veiculo_id: params.veiculoId,
+      cliente_id: params.clienteId ?? null,
+      cliente_nome_avulso: params.clienteNomeAvulso ?? null,
+      vendedor_id: params.vendedorId,
+      valor_venda: valorTotal,
+      valor_final: valorTotal,
+    })
+    .select("id")
+    .single();
+  if (vendaError || !venda) {
+    throw new Error(`Falha ao inserir venda de teste: ${vendaError?.message}`);
+  }
+
+  const { data: contrato, error: contratoError } = await admin
+    .from("contratos_crediario")
+    .insert({
+      tenant_id: tenantId,
+      venda_id: venda.id,
+      cliente_id: params.clienteId ?? null,
+      veiculo_id: params.veiculoId,
+      valor_total: valorTotal,
+      qtd_parcelas: params.parcelas.length,
+      data_primeiro_vencimento: params.parcelas[0].vencimento,
+    })
+    .select("id")
+    .single();
+  if (contratoError || !contrato) {
+    throw new Error(`Falha ao inserir contrato de crediário de teste: ${contratoError?.message}`);
+  }
+
+  const { data: parcelas, error: parcelasError } = await admin
+    .from("parcelas")
+    .insert(
+      params.parcelas.map((p) => ({
+        tenant_id: tenantId,
+        contrato_id: contrato.id,
+        numero: p.numero,
+        vencimento: p.vencimento,
+        valor: p.valor,
+        status: p.status ?? "A vencer",
+        valor_pago: p.valorPago ?? 0,
+        data_pagamento: p.dataPagamento ?? null,
+      })),
+    )
+    .select("id, numero");
+  if (parcelasError) {
+    throw new Error(`Falha ao inserir parcelas de teste: ${parcelasError.message}`);
+  }
+
+  return { vendaId: venda.id, contratoId: contrato.id, parcelas: parcelas ?? [] };
+}
+
 /** Remove o tenant (cascata cobre profiles/lojas/tenant_config) e os auth users criados no teste. */
 export async function cleanupTenantByName(nomeRevenda: string) {
   const admin = createTestAdminClient();

@@ -437,6 +437,20 @@ export type Database = {
             referencedRelation: "vendas";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "contratos_crediario_cliente_id_fkey";
+            columns: ["cliente_id"];
+            isOneToOne: false;
+            referencedRelation: "clientes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contratos_crediario_veiculo_id_fkey";
+            columns: ["veiculo_id"];
+            isOneToOne: false;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
         ];
       };
       parcelas: {
@@ -452,6 +466,7 @@ export type Database = {
           data_pagamento: string | null;
           desconto_aplicado: number;
           juros_multa_aplicado: number;
+          forma_pagamento: TipoPagamento | null;
         };
         Insert: {
           id?: string;
@@ -465,6 +480,7 @@ export type Database = {
           data_pagamento?: string | null;
           desconto_aplicado?: number;
           juros_multa_aplicado?: number;
+          forma_pagamento?: TipoPagamento | null;
         };
         Update: Partial<Database["public"]["Tables"]["parcelas"]["Insert"]>;
         Relationships: [
