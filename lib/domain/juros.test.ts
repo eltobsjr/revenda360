@@ -18,6 +18,19 @@ describe("calcularDiasAtraso", () => {
   it("nunca retorna negativo para vencimento no futuro", () => {
     expect(calcularDiasAtraso("2026-08-15", HOJE)).toBe(0);
   });
+
+  it("vencimento hoje continua 0, mesmo rodando à tarde (bug real encontrado em QA manual)", () => {
+    // Sem normalizar `hoje` para meia-noite, a fração de dia decorrida desde
+    // 00h de hoje (aqui, 15h30) arredondava pra cima e contava como 1 dia
+    // de atraso numa parcela que vence hoje mesmo.
+    const hojeATarde = new Date(2026, 6, 28, 15, 30);
+    expect(calcularDiasAtraso("2026-07-28", hojeATarde)).toBe(0);
+  });
+
+  it("vencimento há exatos 30 dias continua 30, rodando à tarde", () => {
+    const hojeATarde = new Date(2026, 6, 28, 15, 30);
+    expect(calcularDiasAtraso("2026-06-28", hojeATarde)).toBe(30);
+  });
 });
 
 describe("calcularJurosMulta", () => {

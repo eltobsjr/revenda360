@@ -71,8 +71,14 @@ export function ResumoTab({ veiculo }: { veiculo: VeiculoDetalhe }) {
         </p>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <CampoTexto label="Preço à vista" valor={formatBRL(veiculo.preco_venda)} />
-          <CampoTexto label="Preço no financiamento" valor={formatBRL(veiculo.preco_financiamento)} />
-          <CampoTexto label="Valor FIPE" valor={formatBRL(veiculo.valor_fipe)} />
+          <CampoTexto
+            label="Preço no financiamento"
+            valor={veiculo.preco_financiamento != null ? formatBRL(veiculo.preco_financiamento) : null}
+          />
+          <CampoTexto
+            label="Valor FIPE"
+            valor={veiculo.valor_fipe != null ? formatBRL(veiculo.valor_fipe) : null}
+          />
         </div>
       </div>
     </div>

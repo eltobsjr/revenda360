@@ -32,7 +32,9 @@ export function FinanceiroTab({ veiculo }: { veiculo: VeiculoDetalhe }) {
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Preço mínimo</p>
-          <p className="tabular-nums text-sm font-medium">{formatBRL(veiculo.preco_minimo)}</p>
+          <p className="tabular-nums text-sm font-medium">
+            {veiculo.preco_minimo != null ? formatBRL(veiculo.preco_minimo) : "—"}
+          </p>
         </div>
       </div>
 

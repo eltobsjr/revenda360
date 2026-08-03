@@ -9,10 +9,17 @@
 
 export type StatusParcela = "A vencer" | "Paga" | "Atrasada" | "Parcial" | "Renegociada";
 
-/** Dias corridos entre o vencimento e a data de referência (nunca negativo). */
+/**
+ * Dias corridos entre o vencimento e a data de referência (nunca negativo).
+ * `hoje` é normalizado para meia-noite antes da diferença — do contrário, a
+ * hora do dia em que a função roda faz uma parcela que vence hoje contar
+ * como "1 dia atrasada" a partir do meio-dia (fração de dia decorrida desde
+ * a meia-noite de hoje arredondava pra cima).
+ */
 export function calcularDiasAtraso(vencimento: string, hoje: Date): number {
   const venc = new Date(`${vencimento}T00:00:00`);
-  const diffMs = hoje.getTime() - venc.getTime();
+  const hojeMeiaNoite = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const diffMs = hojeMeiaNoite.getTime() - venc.getTime();
   return Math.max(0, Math.round(diffMs / 86_400_000));
 }
 

@@ -83,6 +83,14 @@ describe("diasEstoque", () => {
     const entrada = new Date(2026, 6, 1);
     expect(diasEstoque(entrada, hoje)).toBe(27);
   });
+
+  it("entrada há exatos 30 dias continua 30, mesmo rodando à tarde (bug real encontrado em QA manual)", () => {
+    // Sem normalizar `hoje` para meia-noite, a fração de dia decorrida
+    // desde 00h de hoje (aqui, 15h30) arredondava pra cima e empurrava o
+    // veículo para a faixa de aging seguinte um dia antes da hora.
+    const hojeATarde = new Date(2026, 6, 28, 15, 30);
+    expect(diasEstoque("2026-06-28", hojeATarde)).toBe(30);
+  });
 });
 
 describe("ocultarCamposSensiveis", () => {

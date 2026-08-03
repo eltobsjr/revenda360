@@ -36,11 +36,19 @@ export function precoMinimoEfetivo(
   return custoTotalVeiculo * (1 + margemMinimaPctDefault / 100);
 }
 
-/** Dias em estoque = diferença em dias entre a data de entrada e a data de referência (hoje). */
+/**
+ * Dias em estoque = diferença em dias corridos entre a data de entrada e a
+ * data de referência (hoje). `hoje` é normalizado para meia-noite antes da
+ * diferença — sem isso, a hora do dia em que a função roda faz a conta
+ * "vazar" um dia a mais (ex.: entrada há exatamente 30 dias, rodando às
+ * 15h, dava 31 dias por causa da fração de dia decorrida desde a meia-noite
+ * de hoje).
+ */
 export function diasEstoque(dataEntrada: Date | string, hoje: Date): number {
   const entrada =
     typeof dataEntrada === "string" ? new Date(`${dataEntrada}T00:00:00`) : dataEntrada;
-  const diffMs = hoje.getTime() - entrada.getTime();
+  const hojeMeiaNoite = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const diffMs = hojeMeiaNoite.getTime() - entrada.getTime();
   return Math.max(0, Math.round(diffMs / 86_400_000));
 }
 
