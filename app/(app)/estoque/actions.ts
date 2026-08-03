@@ -112,9 +112,17 @@ export async function salvarVeiculo(input: {
   let veiculoId = input.veiculoId ?? null;
 
   if (veiculoId) {
+    // Fora do papel de gestor, valor de compra e preço mínimo não chegam ao
+    // formulário (`ocultarCamposSensiveis`) — regravá-los aqui zeraria o custo
+    // de aquisição e apagaria o preço mínimo definido pelo gestor. Na criação
+    // eles seguem normalmente: o valor de compra é digitado na própria entrada.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- descartados de propósito
+    const { valor_compra: _valorCompra, preco_minimo: _precoMinimo, ...linhaSemSensiveis } = linha;
+    const alteracoes = profile.role === "gestor" ? linha : linhaSemSensiveis;
+
     const { error } = await supabase
       .from("veiculos")
-      .update({ ...linha, atualizado_em: new Date().toISOString() })
+      .update({ ...alteracoes, atualizado_em: new Date().toISOString() })
       .eq("id", veiculoId);
     if (error) {
       return { error: `Não foi possível salvar o veículo: ${error.message}`, veiculoId: null };

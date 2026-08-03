@@ -22,6 +22,21 @@ describe("gerarParcelas", () => {
       expect(p.valor).toBe(1000);
     }
   });
+
+  it("soma das parcelas fecha com o valor financiado quando a divisão não é exata", () => {
+    // Arredondando cada parcela isoladamente, R$ 1.000 em 3x davam
+    // 3 × 333,33 = 999,99 — um centavo sumia do contrato.
+    const parcelas = gerarParcelas(1000, 0, 3, "2026-03-10");
+    expect(parcelas.map((p) => p.valor)).toEqual([333.33, 333.33, 333.34]);
+    expect(parcelas.reduce((soma, p) => soma + p.valor, 0)).toBeCloseTo(1000, 10);
+  });
+
+  it("resto de centavos vai para a última parcela também com juros", () => {
+    // valorComJuros = 5000 * (1 + 0.03 * 3.5) = 5525 → 7 × 789,285714…
+    const parcelas = gerarParcelas(5000, 3, 7, "2026-03-10");
+    expect(parcelas.reduce((soma, p) => soma + p.valor, 0)).toBeCloseTo(5525, 10);
+    expect(parcelas[6].valor).toBeGreaterThan(parcelas[0].valor);
+  });
 });
 
 describe("adicionarMeses", () => {

@@ -29,7 +29,7 @@ export function InadimplenciaTable({ linhas }: { linhas: InadimplenciaRow[] }) {
           </TableHeader>
           <TableBody>
             {linhas.map((r) => (
-              <TableRow key={r.cliente}>
+              <TableRow key={r.clienteChave}>
                 <TableCell className="font-medium">{r.cliente}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">

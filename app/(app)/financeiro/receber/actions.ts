@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth/session";
 import { getTenantConfig } from "@/lib/data/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { calcularDiasAtraso, calcularJurosMulta } from "@/lib/domain/juros";
+import { dataIsoLocal } from "@/lib/domain/datas";
 import { baixaParcelaSchema } from "@/lib/validation/baixa-parcela.schema";
 
 export type BaixaParcelaState = {
@@ -56,23 +57,30 @@ export async function darBaixaParcela(
   );
   const valorPago = Math.max(0, parcela.valor + juros - desconto);
 
-  const { error: updateError } = await supabase
+  // O `neq` é a trava contra duas baixas simultâneas da mesma parcela (dois
+  // cliques, duas abas): quem chegar depois não atualiza linha nenhuma. Sem o
+  // `select`, esse caso voltaria como sucesso sem ter gravado nada.
+  const { data: atualizadas, error: updateError } = await supabase
     .from("parcelas")
     .update({
       status: "Paga",
       valor_pago: valorPago,
-      data_pagamento: hoje.toISOString().slice(0, 10),
+      data_pagamento: dataIsoLocal(hoje),
       desconto_aplicado: desconto,
       juros_multa_aplicado: juros,
       forma_pagamento: formaPagamento,
     })
     .eq("id", parcelaId)
-    .neq("status", "Paga");
+    .neq("status", "Paga")
+    .select("id");
   if (updateError) {
     return {
       error: "Não foi possível confirmar o recebimento. " + updateError.message,
       sucesso: false,
     };
+  }
+  if (!atualizadas || atualizadas.length === 0) {
+    return { error: "Esta parcela já foi baixada.", sucesso: false };
   }
 
   revalidatePath("/financeiro/receber");

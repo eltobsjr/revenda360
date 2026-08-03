@@ -48,10 +48,12 @@ export function MovimentacoesCard({ movimentacoes }: { movimentacoes: Movimentac
                   <Icon className="size-3.5" />
                 </div>
                 <div className="flex-1 text-sm">{m.texto}</div>
-                <div className={cn("whitespace-nowrap text-sm font-semibold tabular-nums", TIPO_VALOR_CLASSES[m.tipo])}>
-                  {m.valor < 0 ? "-" : "+"}
-                  {formatBRL(Math.abs(m.valor))}
-                </div>
+                {m.valor != null ? (
+                  <div className={cn("whitespace-nowrap text-sm font-semibold tabular-nums", TIPO_VALOR_CLASSES[m.tipo])}>
+                    {m.valor < 0 ? "-" : "+"}
+                    {formatBRL(Math.abs(m.valor))}
+                  </div>
+                ) : null}
                 <div className="whitespace-nowrap text-xs text-muted-foreground">
                   {formatDataBR(m.data)}
                 </div>

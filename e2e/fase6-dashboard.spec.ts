@@ -174,6 +174,11 @@ test.describe("Fase 6 — Dashboard", () => {
     await expect(page.getByText("Lucro líquido")).not.toBeVisible();
     await expect(page.getByText("Margem média")).not.toBeVisible();
 
+    // "Últimas movimentações" mostra a entrada em estoque, mas o valor da
+    // entrada é o custo de aquisição — não pode aparecer para o vendedor.
+    await expect(page.getByText("Entrada em estoque: Fiat Mobi")).toBeVisible();
+    await expect(page.getByText("R$ 12.000,00")).not.toBeVisible();
+
     await deleteUserByEmail(vendedorEmail).catch(() => {});
   });
 });

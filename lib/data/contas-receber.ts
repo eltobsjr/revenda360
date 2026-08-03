@@ -13,6 +13,12 @@ export type ParcelaRow = {
   numero: number;
   totalParcelas: number;
   cliente: string;
+  /**
+   * Identidade do devedor para agrupamento. Nome não serve: dois clientes
+   * homônimos — e principalmente todo contrato sem cliente cadastrado, que cai
+   * no rótulo "Cliente balcão" — seriam somados como se fossem a mesma pessoa.
+   */
+  clienteChave: string;
   veiculo: string;
   vencimento: string;
   valor: number;
@@ -34,6 +40,7 @@ export type ContratoRow = {
 };
 
 export type InadimplenciaRow = {
+  clienteChave: string;
   cliente: string;
   faixa: string;
   valorEmAtraso: number;
@@ -151,6 +158,7 @@ export async function listParcelas(filtroStatus?: StatusParcela): Promise<Parcel
       numero: p.numero,
       totalParcelas: contrato.qtd_parcelas,
       cliente: nomeCliente(contrato),
+      clienteChave: contrato.cliente_id ?? `venda:${contrato.venda_id}`,
       veiculo: nomeVeiculo(contrato),
       vencimento: p.vencimento,
       valor: p.valor,
@@ -212,13 +220,22 @@ export async function listInadimplencia(): Promise<InadimplenciaRow[]> {
   const parcelas = await listParcelas();
   const hoje = new Date();
 
-  const porCliente = new Map<string, { valor: number; maiorAtraso: number; whatsapp: string | null }>();
+  const porCliente = new Map<
+    string,
+    { cliente: string; valor: number; maiorAtraso: number; whatsapp: string | null }
+  >();
   for (const p of parcelas) {
     if (p.status !== "Atrasada" && p.status !== "Parcial") continue;
     const dias = calcularDiasAtraso(p.vencimento, hoje);
     const saldo = p.valor - p.valorPago;
-    const atual = porCliente.get(p.cliente) ?? { valor: 0, maiorAtraso: 0, whatsapp: null };
-    porCliente.set(p.cliente, {
+    const atual = porCliente.get(p.clienteChave) ?? {
+      cliente: p.cliente,
+      valor: 0,
+      maiorAtraso: 0,
+      whatsapp: null,
+    };
+    porCliente.set(p.clienteChave, {
+      cliente: atual.cliente,
       valor: atual.valor + saldo,
       maiorAtraso: Math.max(atual.maiorAtraso, dias),
       whatsapp: atual.whatsapp ?? p.whatsapp,
@@ -226,8 +243,9 @@ export async function listInadimplencia(): Promise<InadimplenciaRow[]> {
   }
 
   return [...porCliente.entries()]
-    .map(([cliente, v]) => ({
-      cliente,
+    .map(([clienteChave, v]) => ({
+      clienteChave,
+      cliente: v.cliente,
       faixa: faixaDeAtraso(v.maiorAtraso),
       valorEmAtraso: v.valor,
       maiorAtraso: v.maiorAtraso,

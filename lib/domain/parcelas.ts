@@ -18,12 +18,19 @@ export function gerarParcelas(
   dataPrimeiroVencimento: string,
 ): Parcela[] {
   const valorComJuros = valorBase * (1 + (taxaJurosMensalPct / 100) * (qtdParcelas / 2));
-  const valorParcela = Math.round((valorComJuros / qtdParcelas) * 100) / 100;
+
+  // Divisão em centavos com o resto na última parcela: arredondar cada parcela
+  // isoladamente fazia a soma do carnê não fechar com o valor financiado
+  // (R$ 1.000 em 3x virava 3 × 333,33 = 999,99), e é essa soma que vira o
+  // `valor_total` do contrato no `fechar_venda`.
+  const totalCentavos = Math.round(valorComJuros * 100);
+  const centavosPorParcela = Math.floor(totalCentavos / qtdParcelas);
+  const restoCentavos = totalCentavos - centavosPorParcela * qtdParcelas;
 
   return Array.from({ length: qtdParcelas }, (_, i) => ({
     numero: i + 1,
     vencimento: adicionarMeses(dataPrimeiroVencimento, i),
-    valor: valorParcela,
+    valor: (centavosPorParcela + (i === qtdParcelas - 1 ? restoCentavos : 0)) / 100,
   }));
 }
 

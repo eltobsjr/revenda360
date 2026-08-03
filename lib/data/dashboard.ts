@@ -27,7 +27,8 @@ export type AgingBucket = { label: string; qtd: number; valor: number; pct: numb
 export type Movimentacao = {
   tipo: "venda" | "entrada" | "recebimento";
   texto: string;
-  valor: number;
+  /** Null em movimentação cujo valor é dado sensível para o papel do usuário. */
+  valor: number | null;
   data: string;
 };
 
@@ -139,7 +140,15 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
     if (!atual || p.numero < atual.numero) proximaPorContrato.set(p.contratoId, p);
   }
   const parcelasVencendo: ParcelaVencendo[] = [...proximaPorContrato.values()]
-    .sort((a, b) => (a.status === "Atrasada" ? -1 : b.status === "Atrasada" ? 1 : 0))
+    // Atrasadas primeiro e, dentro de cada grupo, a que vence antes. O
+    // comparador precisa ser consistente (mesmo par → mesmo resultado): um
+    // comparador que só olha `a` faz o sort devolver ordem arbitrária.
+    .sort((a, b) => {
+      const atrasoA = a.status === "Atrasada" ? 0 : 1;
+      const atrasoB = b.status === "Atrasada" ? 0 : 1;
+      if (atrasoA !== atrasoB) return atrasoA - atrasoB;
+      return a.vencimento.localeCompare(b.vencimento);
+    })
     .slice(0, 5)
     .map((p) => ({
       contratoId: p.contratoId,
@@ -190,7 +199,7 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
     12,
   ).map((m) => ({ label: m.label, faturamento: m.faturamento, lucro: m.lucro }));
 
-  const movimentacoes = await listarMovimentacoesRecentes(6);
+  const movimentacoes = await listarMovimentacoesRecentes(6, podeVerFinanceiro);
 
   return {
     hojeFmt: hoje.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }),
@@ -206,7 +215,10 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
   };
 }
 
-async function listarMovimentacoesRecentes(limite: number): Promise<Movimentacao[]> {
+async function listarMovimentacoesRecentes(
+  limite: number,
+  podeVerFinanceiro: boolean,
+): Promise<Movimentacao[]> {
   const supabase = await createClient();
 
   const [vendasRes, entradasRes, baixas] = await Promise.all([
@@ -255,10 +267,11 @@ async function listarMovimentacoesRecentes(limite: number): Promise<Movimentacao
     };
   });
 
+  // O valor de uma entrada é o custo de aquisição do veículo — dado de gestor.
   const movEntradas: Movimentacao[] = (entradasRes.data ?? []).map((v) => ({
     tipo: "entrada",
     texto: `Entrada em estoque: ${v.marca} ${v.modelo}`,
-    valor: -v.valor_compra,
+    valor: podeVerFinanceiro ? -v.valor_compra : null,
     data: v.data_entrada,
   }));
 

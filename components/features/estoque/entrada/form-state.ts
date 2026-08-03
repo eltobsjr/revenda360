@@ -1,3 +1,4 @@
+import { dataIsoLocal } from "@/lib/domain/datas";
 import type { VeiculoDetalhe } from "@/lib/data/veiculos";
 import type { CustoLinha } from "@/lib/validation/veiculo.schema";
 
@@ -103,7 +104,7 @@ export type VeiculoFormState = {
 };
 
 export function estadoInicialVeiculoForm(tipo: "carro" | "moto"): VeiculoFormState {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = dataIsoLocal(new Date());
   return {
     tipo,
     placa: "",
@@ -230,7 +231,10 @@ export function veiculoParaFormState(v: VeiculoDetalhe): VeiculoFormState {
     dataEntrada: v.data_entrada,
     origem: v.origem as VeiculoFormState["origem"],
     fornecedor: v.fornecedor ?? "",
-    valorCompra: v.valor_compra.toString(),
+    // `valor_compra` e `preco_minimo` não vêm do servidor fora do papel de
+    // gestor (`ocultarCamposSensiveis`) — sem o optional chaining, abrir a
+    // edição de um veículo como vendedor quebrava a página.
+    valorCompra: v.valor_compra?.toString() ?? "",
     formaPagCompra: v.forma_pag_compra ?? "",
     lojaId: v.loja_id ?? "",
 

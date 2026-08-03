@@ -82,10 +82,15 @@ export async function listVeiculosComFinanceiro(
   if (filtros.status) query = query.eq("status", filtros.status);
   if (filtros.marca) query = query.eq("marca", filtros.marca);
   if (filtros.busca) {
-    const termo = filtros.busca.trim();
-    query = query.or(
-      `placa.ilike.%${termo}%,modelo.ilike.%${termo}%,chassi.ilike.%${termo}%`,
-    );
+    // Mesma limpeza feita em `listClientes`: `,`, `(` e `)` têm significado na
+    // sintaxe de filtro do PostgREST — sem remover, uma busca como "Gol, 2020"
+    // quebra o `.or()` e derruba a tela de Estoque.
+    const termo = filtros.busca.trim().replace(/[,()]/g, "");
+    if (termo) {
+      query = query.or(
+        `placa.ilike.%${termo}%,modelo.ilike.%${termo}%,chassi.ilike.%${termo}%`,
+      );
+    }
   }
 
   const { data, error } = await query;

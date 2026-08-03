@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Star, Trash2, Upload } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,7 +34,14 @@ export function MidiaTab({
 }) {
   const [urlsExistentes, setUrlsExistentes] = useState<Record<string, string>>({});
   const [idsRemovidos, setIdsRemovidos] = useState<Set<string>>(new Set());
-  const fotos = fotosExistentes.filter((f) => !idsRemovidos.has(f.id));
+  // Memoizado porque a lista entra nas dependências do efeito abaixo: um
+  // `filter` solto devolve um array novo a cada render, o efeito rodava de
+  // novo, gravava as URLs no state, o state disparava outro render — laço
+  // infinito pedindo URL assinada ao servidor sem parar.
+  const fotos = useMemo(
+    () => fotosExistentes.filter((f) => !idsRemovidos.has(f.id)),
+    [fotosExistentes, idsRemovidos],
+  );
 
   useEffect(() => {
     let ativo = true;
