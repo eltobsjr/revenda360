@@ -133,7 +133,10 @@ test.describe("Fase 5 — Contas a receber", () => {
         precoVenda: 58900,
       },
     ]);
-    const clienteId = await seedCliente(tenantId, { nome: "Roberta Cobrança E2E" });
+    const clienteId = await seedCliente(tenantId, {
+      nome: "Roberta Cobrança E2E",
+      whatsapp: "(11) 98888-7777",
+    });
 
     await seedContratoCrediario(tenantId, {
       veiculoId,
@@ -165,5 +168,9 @@ test.describe("Fase 5 — Contas a receber", () => {
     const linha = page.getByRole("row", { name: /Roberta Cobrança E2E/ });
     await expect(linha.getByText("R$ 1.500,00")).toBeVisible();
     await expect(linha.getByText("1–15 dias")).toBeVisible();
+
+    const linkCobrar = linha.getByRole("button", { name: "Cobrar" });
+    await expect(linkCobrar).toHaveAttribute("href", /^https:\/\/wa\.me\/5511988887777\?text=/);
+    await expect(linkCobrar).toHaveAttribute("target", "_blank");
   });
 });

@@ -46,7 +46,7 @@ test.describe("Fase 0 — login, equipe, tema (tenant provisionado como o painel
       await page.getByLabel("Senha").fill(SENHA);
       await page.getByRole("button", { name: "Entrar" }).click();
       await expect(page).toHaveURL(/\/dashboard/);
-      await expect(page.getByText("Esta tela existe e é navegável")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     });
 
     await test.step("gestor cria um vendedor pela tela de Equipe", async () => {

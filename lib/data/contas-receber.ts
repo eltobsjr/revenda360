@@ -20,6 +20,7 @@ export type ParcelaRow = {
   status: StatusParcela;
   diasAtraso: number;
   podeBaixar: boolean;
+  whatsapp: string | null;
 };
 
 export type ContratoRow = {
@@ -37,6 +38,7 @@ export type InadimplenciaRow = {
   faixa: string;
   valorEmAtraso: number;
   maiorAtraso: number;
+  whatsapp: string | null;
 };
 
 type ContratoBase = {
@@ -70,8 +72,11 @@ async function resolverNomes(contratos: ContratoBase[]) {
 
   const [clientesRes, veiculosRes, vendasRes] = await Promise.all([
     clienteIds.length
-      ? supabase.from("clientes").select("id, nome").in("id", clienteIds)
-      : Promise.resolve({ data: [] as { id: string; nome: string }[], error: null }),
+      ? supabase.from("clientes").select("id, nome, whatsapp").in("id", clienteIds)
+      : Promise.resolve({
+          data: [] as { id: string; nome: string; whatsapp: string | null }[],
+          error: null,
+        }),
     veiculoIds.length
       ? supabase.from("veiculos").select("id, marca, modelo").in("id", veiculoIds)
       : Promise.resolve({ data: [] as { id: string; marca: string; modelo: string }[], error: null }),
@@ -84,7 +89,7 @@ async function resolverNomes(contratos: ContratoBase[]) {
   if (veiculosRes.error) throw new Error(`Falha ao resolver veículos: ${veiculosRes.error.message}`);
   if (vendasRes.error) throw new Error(`Falha ao resolver vendas: ${vendasRes.error.message}`);
 
-  const nomeClientePorId = new Map((clientesRes.data ?? []).map((c) => [c.id, c.nome]));
+  const clientePorId = new Map((clientesRes.data ?? []).map((c) => [c.id, c]));
   const veiculoPorId = new Map(
     (veiculosRes.data ?? []).map((v) => [v.id, `${v.marca} ${v.modelo}`]),
   );
@@ -93,7 +98,7 @@ async function resolverNomes(contratos: ContratoBase[]) {
   );
 
   function nomeCliente(contrato: ContratoBase): string {
-    if (contrato.cliente_id) return nomeClientePorId.get(contrato.cliente_id) ?? "Cliente";
+    if (contrato.cliente_id) return clientePorId.get(contrato.cliente_id)?.nome ?? "Cliente";
     return nomeAvulsoPorVenda.get(contrato.venda_id) ?? "Cliente balcão";
   }
 
@@ -101,7 +106,12 @@ async function resolverNomes(contratos: ContratoBase[]) {
     return veiculoPorId.get(contrato.veiculo_id) ?? "Veículo";
   }
 
-  return { nomeCliente, nomeVeiculo };
+  function whatsappCliente(contrato: ContratoBase): string | null {
+    if (!contrato.cliente_id) return null;
+    return clientePorId.get(contrato.cliente_id)?.whatsapp ?? null;
+  }
+
+  return { nomeCliente, nomeVeiculo, whatsappCliente };
 }
 
 const FAIXAS_ATRASO = [
@@ -122,7 +132,7 @@ export async function listParcelas(filtroStatus?: StatusParcela): Promise<Parcel
   const contratos = [...contratosPorId.values()];
   if (contratos.length === 0) return [];
 
-  const { nomeCliente, nomeVeiculo } = await resolverNomes(contratos);
+  const { nomeCliente, nomeVeiculo, whatsappCliente } = await resolverNomes(contratos);
 
   const { data: parcelas, error } = await supabase
     .from("parcelas")
@@ -148,6 +158,7 @@ export async function listParcelas(filtroStatus?: StatusParcela): Promise<Parcel
       status,
       diasAtraso: status === "Atrasada" || status === "Parcial" ? calcularDiasAtraso(p.vencimento, hoje) : 0,
       podeBaixar: status !== "Paga",
+      whatsapp: whatsappCliente(contrato),
     };
   });
 
@@ -201,15 +212,16 @@ export async function listInadimplencia(): Promise<InadimplenciaRow[]> {
   const parcelas = await listParcelas();
   const hoje = new Date();
 
-  const porCliente = new Map<string, { valor: number; maiorAtraso: number }>();
+  const porCliente = new Map<string, { valor: number; maiorAtraso: number; whatsapp: string | null }>();
   for (const p of parcelas) {
     if (p.status !== "Atrasada" && p.status !== "Parcial") continue;
     const dias = calcularDiasAtraso(p.vencimento, hoje);
     const saldo = p.valor - p.valorPago;
-    const atual = porCliente.get(p.cliente) ?? { valor: 0, maiorAtraso: 0 };
+    const atual = porCliente.get(p.cliente) ?? { valor: 0, maiorAtraso: 0, whatsapp: null };
     porCliente.set(p.cliente, {
       valor: atual.valor + saldo,
       maiorAtraso: Math.max(atual.maiorAtraso, dias),
+      whatsapp: atual.whatsapp ?? p.whatsapp,
     });
   }
 
@@ -219,6 +231,7 @@ export async function listInadimplencia(): Promise<InadimplenciaRow[]> {
       faixa: faixaDeAtraso(v.maiorAtraso),
       valorEmAtraso: v.valor,
       maiorAtraso: v.maiorAtraso,
+      whatsapp: v.whatsapp,
     }))
     .sort((a, b) => b.valorEmAtraso - a.valorEmAtraso);
 }
@@ -263,4 +276,45 @@ export async function getParcelaParaBaixa(parcelaId: string): Promise<{
     valor: parcela.valor,
     status: statusEfetivo(parcela.status, parcela.vencimento, new Date()),
   };
+}
+
+export type BaixaRecente = {
+  cliente: string;
+  veiculo: string;
+  numero: number;
+  totalParcelas: number;
+  valorPago: number;
+  dataPagamento: string;
+};
+
+/** Últimas parcelas baixadas (pagas), para o feed de "últimas movimentações" do Dashboard. */
+export async function listUltimasBaixas(limite: number): Promise<BaixaRecente[]> {
+  const supabase = await createClient();
+  const { data: parcelas, error } = await supabase
+    .from("parcelas")
+    .select("contrato_id, numero, valor_pago, data_pagamento")
+    .eq("status", "Paga")
+    .not("data_pagamento", "is", null)
+    .order("data_pagamento", { ascending: false })
+    .limit(limite);
+  if (error) throw new Error(`Falha ao listar baixas recentes: ${error.message}`);
+  if (!parcelas || parcelas.length === 0) return [];
+
+  const contratosPorId = await carregarContratosBase();
+  const contratosEnvolvidos = [...new Set(parcelas.map((p) => p.contrato_id))]
+    .map((id) => contratosPorId.get(id))
+    .filter((c): c is ContratoBase => !!c);
+  const { nomeCliente, nomeVeiculo } = await resolverNomes(contratosEnvolvidos);
+
+  return parcelas.map((p) => {
+    const contrato = contratosPorId.get(p.contrato_id);
+    return {
+      cliente: contrato ? nomeCliente(contrato) : "Cliente",
+      veiculo: contrato ? nomeVeiculo(contrato) : "Veículo",
+      numero: p.numero,
+      totalParcelas: contrato?.qtd_parcelas ?? p.numero,
+      valorPago: p.valor_pago,
+      dataPagamento: p.data_pagamento!,
+    };
+  });
 }

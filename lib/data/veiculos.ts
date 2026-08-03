@@ -62,8 +62,14 @@ function enriquecerVeiculo(
   };
 }
 
-export async function listVeiculos(
-  role: UserRole,
+/**
+ * Lista veículos com campos financeiros calculados, sem ocultar nada por
+ * role — uso interno de outras camadas de dados (ex.: Dashboard) que
+ * precisam do custo/margem bruto para agregações e decidem por conta
+ * própria o que expor a cada role. Telas que exibem veículo por veículo
+ * devem usar `listVeiculos`, que já filtra por role.
+ */
+export async function listVeiculosComFinanceiro(
   filtros: ListVeiculosFiltros = {},
 ): Promise<VeiculoComFinanceiro[]> {
   const supabase = await createClient();
@@ -86,7 +92,14 @@ export async function listVeiculos(
   if (error) throw new Error(`Falha ao listar veículos: ${error.message}`);
 
   const hoje = new Date();
-  const enriquecidos = (data ?? []).map((row) => enriquecerVeiculo(row, hoje));
+  return (data ?? []).map((row) => enriquecerVeiculo(row, hoje));
+}
+
+export async function listVeiculos(
+  role: UserRole,
+  filtros: ListVeiculosFiltros = {},
+): Promise<VeiculoComFinanceiro[]> {
+  const enriquecidos = await listVeiculosComFinanceiro(filtros);
   return enriquecidos.map((v) => ocultarCamposSensiveis(v, role));
 }
 

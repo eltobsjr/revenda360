@@ -194,17 +194,61 @@ export async function seedVeiculos(
 /** Insere um cliente direto no tenant, para testar telas que dependem de um cliente já cadastrado (ex.: Nova venda). */
 export async function seedCliente(
   tenantId: string,
-  cliente: { nome: string; cpf?: string },
+  cliente: { nome: string; cpf?: string; whatsapp?: string },
 ) {
   const admin = createTestAdminClient();
   const { data, error } = await admin
     .from("clientes")
-    .insert({ tenant_id: tenantId, nome: cliente.nome, cpf: cliente.cpf ?? null })
+    .insert({
+      tenant_id: tenantId,
+      nome: cliente.nome,
+      cpf: cliente.cpf ?? null,
+      whatsapp: cliente.whatsapp ?? null,
+    })
     .select("id")
     .single();
 
   if (error || !data) {
     throw new Error(`Falha ao inserir cliente de teste ${cliente.nome}: ${error?.message}`);
+  }
+  return data.id;
+}
+
+/**
+ * Insere uma venda à vista direto no tenant, para testar telas que agregam
+ * dados de vendas (Dashboard) sem depender do wizard de Nova venda (Fase 4)
+ * para controlar a data da venda.
+ */
+export async function seedVenda(
+  tenantId: string,
+  params: {
+    veiculoId: string;
+    vendedorId: string;
+    clienteId?: string | null;
+    clienteNomeAvulso?: string;
+    valorFinal: number;
+    comissaoValor?: number;
+    dataVenda?: string;
+  },
+) {
+  const admin = createTestAdminClient();
+  const { data, error } = await admin
+    .from("vendas")
+    .insert({
+      tenant_id: tenantId,
+      veiculo_id: params.veiculoId,
+      cliente_id: params.clienteId ?? null,
+      cliente_nome_avulso: params.clienteNomeAvulso ?? null,
+      vendedor_id: params.vendedorId,
+      valor_venda: params.valorFinal,
+      valor_final: params.valorFinal,
+      comissao_valor: params.comissaoValor ?? 0,
+      data_venda: params.dataVenda ?? new Date().toISOString().slice(0, 10),
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    throw new Error(`Falha ao inserir venda de teste: ${error?.message}`);
   }
   return data.id;
 }
@@ -221,6 +265,7 @@ export async function seedContratoCrediario(
     vendedorId: string;
     clienteId?: string | null;
     clienteNomeAvulso?: string;
+    dataVenda?: string;
     parcelas: {
       numero: number;
       vencimento: string;
@@ -244,6 +289,7 @@ export async function seedContratoCrediario(
       vendedor_id: params.vendedorId,
       valor_venda: valorTotal,
       valor_final: valorTotal,
+      ...(params.dataVenda ? { data_venda: params.dataVenda } : {}),
     })
     .select("id")
     .single();
