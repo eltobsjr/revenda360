@@ -4,8 +4,8 @@ Atualizado em 2026-08-05.
 
 ## Agora (próximo passo)
 
-**MVP completo — todas as 6 fases do plano original estão implementadas, e o painel administrativo (v1) também.**
-Não há mais uma "próxima fase" na sequência original. Pendência operacional imediata: aplicar a migration `0007_admin_panel.sql` manualmente no SQL Editor do Supabase e inserir a primeira linha em `platform_admins` (só por SQL direto — sem policy de insert). Os demais itens abaixo (pós-MVP) são os candidatos para a próxima frente de trabalho.
+**MVP completo — todas as 6 fases do plano original estão implementadas, e o painel administrativo (v1) também, já com a conta do dono da plataforma provisionada.**
+Não há mais uma "próxima fase" na sequência original nem pendência operacional aberta. Os itens abaixo (pós-MVP) são os candidatos para a próxima frente de trabalho — nenhum priorizado ainda, esperando você escolher.
 
 ## Concluído
 
@@ -19,7 +19,7 @@ Não há mais uma "próxima fase" na sequência original. Pendência operacional
 - **Fase 5** — Contas a receber (3 visões + baixa de parcela com juros/multa + link de cobrança WhatsApp) — ver devtrack `2026-08-03 - Fase 5 (Contas a receber).md`
 - **Fase 6** — Dashboard (KPIs, parcelas vencendo, aging, gráfico 12 meses, mix carro×moto, top modelos, últimas movimentações) — ver devtrack `2026-08-03 - Fase 6 (Dashboard) e MVP completo.md`
 - **QA pós-MVP** — 11 bugs reais corrigidos (arredondamento de parcelas, timezone em datas gravadas, normalização de meia-noite em juros/aging, corrida em baixa de parcela, agrupamento de inadimplência por homônimo, vazamento de custo de aquisição pro vendedor, entre outros) — commits `1573e8a`, `82f9d1e`, ver devtrack `2026-08-03 - QA pós-MVP (correção de 11 bugs reais).md`
-- **Painel administrativo do dono da plataforma (v1)** — provisiona revenda (tenant + loja + gestor) via `/admin`, sem autocadastro público — commit `8e3051b` (Enzo), ver devtrack `2026-08-03 - Painel administrativo do dono da plataforma (v1).md`. Falta aplicar a migration no Supabase (pendência operacional, ver acima).
+- **Painel administrativo do dono da plataforma (v1)** — provisiona revenda (tenant + loja + gestor) via `/admin`, sem autocadastro público — commit `8e3051b` (Enzo), ver devtrack `2026-08-03 - Painel administrativo do dono da plataforma (v1).md`. Migration aplicada e conta do dono da plataforma provisionada em 2026-08-05 (via `scripts/local-seed-platform-admin.mjs`, não versionado).
 
 ## Pós-MVP (documentado, não priorizado ainda)
 
@@ -41,4 +41,4 @@ Não há mais uma "próxima fase" na sequência original. Pendência operacional
 - Toda tela nova nasce com teste E2E Playwright.
 - Ajuste de design sempre nos componentes compartilhados, nunca só numa tela.
 - Nunca incluir "Co-Authored-By: Claude" nos commits.
-- **Atualizado 2026-08-01**: usuário mudou a regra de commit — agora é "ao terminar uma fase, commita, pusha, e já começa a próxima" (sem precisar pedir permissão a cada vez). Isso substitui a regra antiga de "nunca commitar sem permissão explícita".
+- **Atualizado 2026-08-01, reconfirmado 2026-08-05**: pode commitar (e pushar) sem pedir permissão a cada vez — inclusive ao terminar uma fase — desde que passe antes por typecheck + lint + build + testes automáticos, todos limpos. `CLAUDE.md` já reflete essa regra (só estava desatualizado até 2026-08-05).
