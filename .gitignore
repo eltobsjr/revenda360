@@ -38,6 +38,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# scripts locais de execução única com segredo embutido (ex.: seed de conta admin) — nunca versionar
+/scripts/local-*
+
 # vercel
 .vercel
 
