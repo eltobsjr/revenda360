@@ -2,6 +2,16 @@
 
 # CLAUDE.md — Revenda360
 
+## 0. Regra suprema: segurança de dados vem antes de tudo
+
+**Segurança dos dados é a prioridade máxima deste projeto — acima de velocidade, autonomia de commit e qualquer outra regra deste arquivo.** Em caso de conflito entre "seguir rápido" e "proteger dado", vence proteger dado, sempre. Concretamente:
+
+- **RLS nunca é opcional nem "depois eu arrumo"**: toda tabela nova nasce com `tenant_id` + policy `current_tenant_id()` já na mesma migration que cria a tabela — nunca numa migration futura "de ajuste".
+- **Dado sensível (preço mínimo, margem, custo de aquisição/valor de compra, comissão, qualquer dado financeiro interno, CPF/dados pessoais de cliente) só chega a quem tem role autorizada** — filtrado em `lib/data/*` (nunca só escondido no componente visual, que é filtro cosmético e não segurança real).
+- **Segredo nunca vai pro git**: chave de API, senha, service role key — nem em migration, nem em script, nem em commit "temporário pra testar". Se um script precisa de segredo (ex.: senha de conta), ele fica fora do controle de versão (ver `.gitignore`), sempre.
+- **A autonomia de commitar sem pedir permissão (regra 5) não vale se a mudança tocar segurança** (RLS, autenticação, autorização, exposição de dado sensível, segredo) — nesses casos, mesmo com testes passando, pare e descreva o que vai mudar antes de commitar, para o usuário confirmar.
+- Ao encontrar uma tabela, rota, ou tela que exponha dado sem o filtro certo — mesmo que não seja o que você estava construindo — **avise antes de seguir**, não conserte silenciosamente e não ignore.
+
 ## 1. Sempre ler a memória antes de começar
 
 Ao iniciar qualquer conversa neste projeto:

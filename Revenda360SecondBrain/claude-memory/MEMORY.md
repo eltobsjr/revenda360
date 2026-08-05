@@ -1,5 +1,6 @@
 # Memory Index
 
+- [Regra suprema: segurança de dados](feedback_seguranca_dados.md) — Segurança vem antes de velocidade/autonomia de commit; RLS e dado sensível são inegociáveis
 - [Visão geral do projeto](project_overview.md) — Stack, objetivo e estrutura do Revenda360
 - [Idioma de comunicação](feedback_language.md) — Responder sempre em pt-BR
 - [Regras e convenções](feedback_rules.md) — Commits, testes E2E obrigatórios, design system compartilhado

@@ -21,20 +21,44 @@ Não há mais uma "próxima fase" na sequência original nem pendência operacio
 - **QA pós-MVP** — 11 bugs reais corrigidos (arredondamento de parcelas, timezone em datas gravadas, normalização de meia-noite em juros/aging, corrida em baixa de parcela, agrupamento de inadimplência por homônimo, vazamento de custo de aquisição pro vendedor, entre outros) — commits `1573e8a`, `82f9d1e`, ver devtrack `2026-08-03 - QA pós-MVP (correção de 11 bugs reais).md`
 - **Painel administrativo do dono da plataforma (v1)** — provisiona revenda (tenant + loja + gestor) via `/admin`, sem autocadastro público — commit `8e3051b` (Enzo), ver devtrack `2026-08-03 - Painel administrativo do dono da plataforma (v1).md`. Migration aplicada e conta do dono da plataforma provisionada em 2026-08-05 (via `scripts/local-seed-platform-admin.mjs`, não versionado).
 
-## Pós-MVP (documentado, não priorizado ainda)
+## Pós-MVP — ordem de prioridade (definida em 2026-08-05)
 
-- Clientes completo, Avaliação/Troca dedicada, Consignados, Fornecedores
-- Contas a pagar, Fluxo de caixa, Comissões, DRE por veículo
-- Régua de cobrança automatizada via WhatsApp — hoje existe só o link manual `wa.me` (Fase 5), sem cadência/automação
-- Leads/CRM kanban, permissões avançadas, Configurações da loja, Relatórios, PDF
-- Integrações reais (FIPE, placa/Renavam, WhatsApp Business API, portais), billing do SaaS, otimização de RLS via JWT claims, PWA
-- Tela `/vendas/realizadas` (listagem de vendas) — hoje só stub; a Nova venda já redireciona pra lá
-- Renegociação de contrato de crediário — botão "Renegociar" na tela de Inadimplência (Fase 5) existe só no protótipo como toast, sem funcionalidade real; não implementado
+Guia de construção fase a fase, com prompt pronto pra cada uma, em
+`Revenda360SecondBrain/prioridade/guia-construcao-enzo.md`.
 
-## Fora da sequência de fases (esperando o usuário decidir quando)
+### Tier 0 — bloqueia vender pra qualquer revenda real
+1. **Deploy/CI** — hoje o app só roda local; sem isso nenhum cliente acessa o sistema.
 
-- SMTP próprio no Supabase — só relevante se algum fluxo futuro voltar a mandar e-mail (ex.: convite de acesso); não é mais bloqueante do jeito que era com o autocadastro.
-- Deploy/CI
+### Tier 1 — buracos no ciclo que já está em uso
+2. **Vendas realizadas** (`/vendas/realizadas`, hoje stub) — falta o "ver o que já vendi".
+3. **Avaliação/Troca** (`/estoque/avaliacao-troca`, hoje stub) — Nova venda já aceita troca (`venda_pagamentos.tipo = 'troca'`) mas decisão registrada foi não criar o veículo recebido no estoque a partir disso; sem esta tela, todo trade-in é um veículo que a revenda tem fisicamente mas o sistema não sabe que existe.
+4. **Clientes completo** (ficha com histórico) — hoje `/clientes` só lista/busca/cria rápido.
+5. **Contas a pagar** (`/financeiro/pagar`, hoje stub) — Financeiro só enxerga o que entra.
+
+### Tier 2 — fecha o módulo financeiro
+6. **Fluxo de caixa** (`/financeiro/fluxo-caixa`, hoje stub)
+7. **Comissões** (`/financeiro/comissoes`, hoje stub) — `vendas.comissao_valor` já existe, falta a tela de gestão/pagamento.
+8. **DRE por veículo** (`/financeiro/dre`, hoje stub)
+
+### Tier 3 — completa o catálogo de estoque
+9. **Consignados** (`/estoque/consignados`, hoje stub) — `veiculos.status` já tem o valor `"Consignado"`, mas não existe modelagem de consignante/comissão/repasse.
+10. **Fornecedores** (`/fornecedores`, hoje stub) — hoje `veiculos.fornecedor` é texto livre, sem tabela própria.
+11. **Marcas/Modelos** (`/marcas-modelos`, hoje stub) — cadastro estruturado; hoje `veiculos.marca`/`modelo` são texto livre.
+
+### Tier 4 — funil de vendas
+12. **Régua de cobrança automatizada via WhatsApp** — evolução do link manual `wa.me` que já existe (Fase 5).
+13. **Leads (CRM kanban)** (`/vendas/leads`, hoje stub)
+14. **Propostas** (`/vendas/propostas`, hoje stub)
+15. **Renegociação de contrato de crediário** — botão "Renegociar" na Inadimplência existe só como toast herdado do protótipo.
+
+### Tier 5 — cauda longa
+16. Relatórios / PDF (`/relatorios`, hoje stub)
+17. Configurações da loja (`/configuracoes`, hoje stub)
+18. Permissões avançadas (hoje só 3 papéis: gestor/vendedor/financeiro)
+19. Integrações reais (FIPE, placa/Renavam, WhatsApp Business API, portais de anúncio)
+20. PWA
+21. Billing do SaaS — baixa urgência enquanto a venda pra cada revenda é manual/negociada direto
+22. SMTP próprio no Supabase — só relevante se algum fluxo voltar a depender de e-mail
 
 ## Regras fixas para toda fase daqui em diante
 
