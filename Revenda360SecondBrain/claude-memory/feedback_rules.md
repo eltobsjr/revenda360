@@ -5,10 +5,10 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: c7f3581a-eded-4a56-8f13-349235ad7367
-  modified: 2026-08-01T20:59:56.084Z
+  modified: 2026-08-05T11:52:01.340Z
 ---
 
-**Ao terminar uma fase, commitar, pushar e já começar a próxima fase, sem perguntar de novo a cada vez.** Esta regra foi dada explicitamente pelo usuário ("quando acabar commita, pusha, e ja começa a fazer as proximas fases") e **substitui** a regra anterior de "nunca commitar sem permissão explícita" — a permissão já foi dada de forma permanente para o fluxo de fases do MVP. Continua valendo pedir confirmação para ações fora desse fluxo (force-push, reset, deletar branch, etc.).
+**Pode commitar sem pedir permissão a cada vez — inclusive ao terminar uma fase inteira — desde que passe antes pela verificação obrigatória (typecheck + lint + build) e pelos testes automáticos (unitários + E2E), todos limpos.** Regra dada em 2026-08-01 ("quando acabar commita, pusha, e ja começa a fazer as proximas fases") e reconfirmada em 2026-08-05 com a condição explícita da verificação/testes — **substitui** a regra anterior de "nunca commitar sem permissão explícita". `CLAUDE.md` já reflete essa versão (atualizado em 2026-08-05; até então estava desatualizado/conflitante com esta memória). Push para o remoto (repositório público no GitHub) segue sendo avaliado caso a caso — confirmar antes de pushar fora do fluxo já validado de "terminei uma fase". Continua valendo pedir confirmação para ações fora desse fluxo (force-push, reset, deletar branch, etc.).
 
 **Nunca incluir "Co-Authored-By: Claude" ou qualquer assinatura similar nos commits deste projeto** — isso sobrepõe a instrução padrão de assinatura de commits para este repositório específico.
 

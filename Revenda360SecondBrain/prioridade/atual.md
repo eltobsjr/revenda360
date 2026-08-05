@@ -1,11 +1,11 @@
 # Prioridade atual — Revenda360
 
-Atualizado em 2026-08-03.
+Atualizado em 2026-08-05.
 
 ## Agora (próximo passo)
 
-**MVP completo — todas as 6 fases do plano original estão implementadas.**
-Não há mais uma "próxima fase" na sequência original. Os itens abaixo (pós-MVP e fora da sequência) são os candidatos para a próxima frente de trabalho — o painel administrativo do dono da plataforma é o mais urgente, por ser hoje o único bloqueio para provisionar uma revenda cliente de verdade.
+**MVP completo — todas as 6 fases do plano original estão implementadas, e o painel administrativo (v1) também.**
+Não há mais uma "próxima fase" na sequência original. Pendência operacional imediata: aplicar a migration `0007_admin_panel.sql` manualmente no SQL Editor do Supabase e inserir a primeira linha em `platform_admins` (só por SQL direto — sem policy de insert). Os demais itens abaixo (pós-MVP) são os candidatos para a próxima frente de trabalho.
 
 ## Concluído
 
@@ -18,6 +18,8 @@ Não há mais uma "próxima fase" na sequência original. Os itens abaixo (pós-
 - **Fase 4** — Nova venda (wizard 7 etapas + RPC transacional `fechar_venda`) — commit `90aba0c`
 - **Fase 5** — Contas a receber (3 visões + baixa de parcela com juros/multa + link de cobrança WhatsApp) — ver devtrack `2026-08-03 - Fase 5 (Contas a receber).md`
 - **Fase 6** — Dashboard (KPIs, parcelas vencendo, aging, gráfico 12 meses, mix carro×moto, top modelos, últimas movimentações) — ver devtrack `2026-08-03 - Fase 6 (Dashboard) e MVP completo.md`
+- **QA pós-MVP** — 11 bugs reais corrigidos (arredondamento de parcelas, timezone em datas gravadas, normalização de meia-noite em juros/aging, corrida em baixa de parcela, agrupamento de inadimplência por homônimo, vazamento de custo de aquisição pro vendedor, entre outros) — commits `1573e8a`, `82f9d1e`, ver devtrack `2026-08-03 - QA pós-MVP (correção de 11 bugs reais).md`
+- **Painel administrativo do dono da plataforma (v1)** — provisiona revenda (tenant + loja + gestor) via `/admin`, sem autocadastro público — commit `8e3051b` (Enzo), ver devtrack `2026-08-03 - Painel administrativo do dono da plataforma (v1).md`. Falta aplicar a migration no Supabase (pendência operacional, ver acima).
 
 ## Pós-MVP (documentado, não priorizado ainda)
 
@@ -31,7 +33,6 @@ Não há mais uma "próxima fase" na sequência original. Os itens abaixo (pós-
 
 ## Fora da sequência de fases (esperando o usuário decidir quando)
 
-- **Painel administrativo do dono da plataforma** (arquitetado, não implementado) — não é mais só "legal ter": autocadastro público foi removido (2026-08-01), então é o único jeito de provisionar uma revenda cliente de verdade. Enquanto não existe, provisionamento é manual (SQL direto/curl no Supabase, como fiz para debug). Com o MVP de fases completo, este é o candidato mais forte a próxima frente de trabalho.
 - SMTP próprio no Supabase — só relevante se algum fluxo futuro voltar a mandar e-mail (ex.: convite de acesso); não é mais bloqueante do jeito que era com o autocadastro.
 - Deploy/CI
 

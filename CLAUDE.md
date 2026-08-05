@@ -52,7 +52,7 @@ Formato dos logs: `YYYY-MM-DD - Título.md`
 
 ## 5. Regras de desenvolvimento
 
-- **Nunca commitar sem permissão explícita do usuário**, mesmo ao terminar uma fase inteira.
+- **Pode commitar sem pedir permissão a cada vez** — inclusive ao terminar uma fase inteira — desde que passe antes pela verificação obrigatória (typecheck + lint + build) e pelos testes automáticos (unitários + E2E). Regra atualizada em 2026-08-05; substitui qualquer versão anterior que exigisse permissão explícita.
 - **Nunca incluir "Co-Authored-By: Claude" ou assinatura similar nos commits.**
 - **Toda tela nova construída (Fase 1 em diante) deve nascer com teste E2E Playwright**, seguindo o padrão de `e2e/fase0.spec.ts` (helpers de admin API para preparar dados, sem depender de e-mail real quando possível).
 - Design system: qualquer ajuste visual (cor, altura de campo, tipografia) deve ser feito nos componentes compartilhados (`components/ui/*`, `app/globals.css`), nunca só numa tela — é isso que garante consistência em toda a plataforma.
