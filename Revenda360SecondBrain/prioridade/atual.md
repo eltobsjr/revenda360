@@ -1,11 +1,10 @@
 # Prioridade atual — Revenda360
 
-Atualizado em 2026-08-05.
+Atualizado em 2026-08-06.
 
 ## Agora (próximo passo)
 
-**MVP completo — todas as 6 fases do plano original estão implementadas, e o painel administrativo (v1) também, já com a conta do dono da plataforma provisionada.**
-Não há mais uma "próxima fase" na sequência original nem pendência operacional aberta. Os itens abaixo (pós-MVP) são os candidatos para a próxima frente de trabalho — nenhum priorizado ainda, esperando você escolher.
+**Fase 7 (Deploy/CI) — Parte 2 (CI) concluída pelo Claude Code; Parte 1 (deploy manual na Vercel) ainda pendente com o Enzo.** Ver devtrack `2026-08-06 - Fase 7 (Deploy CI).md`. Depois do deploy manual e do checklist de teste bater, seguir para a Fase 8 (Vendas realizadas) — ordem completa abaixo.
 
 ## Concluído
 
@@ -27,7 +26,7 @@ Guia de construção fase a fase, com prompt pronto pra cada uma, em
 `Revenda360SecondBrain/prioridade/guia-construcao-enzo.md`.
 
 ### Tier 0 — bloqueia vender pra qualquer revenda real
-1. **Deploy/CI** — hoje o app só roda local; sem isso nenhum cliente acessa o sistema.
+1. **Deploy/CI** — **Parte 2 (CI) concluída em 2026-08-06** (`.github/workflows/ci.yml`, ver devtrack `2026-08-06 - Fase 7 (Deploy CI).md`). **Parte 1 (deploy manual na Vercel) ainda pendente com o Enzo** — sem ela nenhum cliente acessa o sistema.
 
 ### Tier 1 — buracos no ciclo que já está em uso
 2. **Vendas realizadas** (`/vendas/realizadas`, hoje stub) — falta o "ver o que já vendi".

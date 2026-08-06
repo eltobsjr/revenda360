@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test -- --run
+
+      - name: Build
+        run: npm run build
+
+      # TODO: rodar testes E2E (Playwright) aqui também. Hoje eles dependem
+      # de um banco Supabase real (ver e2e/helpers/admin.ts, que usa a
+      # service role key pra provisionar dados de teste) — não disponível
+      # neste runner. Quando houver um projeto Supabase dedicado a CI (ou um
+      # Postgres local com o schema aplicado), adicionar aqui:
+      #   npx playwright install --with-deps
+      #   npm run test:e2e
