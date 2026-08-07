@@ -507,6 +507,38 @@ export type Database = {
           },
         ];
       };
+      contas_pagar: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          descricao: string;
+          categoria: string | null;
+          fornecedor: string | null;
+          valor: number;
+          vencimento: string;
+          status: StatusParcela;
+          valor_pago: number;
+          data_pagamento: string | null;
+          forma_pagamento: TipoPagamento | null;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          descricao: string;
+          categoria?: string | null;
+          fornecedor?: string | null;
+          valor: number;
+          vencimento: string;
+          status?: StatusParcela;
+          valor_pago?: number;
+          data_pagamento?: string | null;
+          forma_pagamento?: TipoPagamento | null;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["contas_pagar"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
