@@ -80,7 +80,9 @@ test.describe("Fase 9 — Avaliação/Troca", () => {
     await page.getByRole("link", { name: "Completar cadastro" }).click();
     await expect(page).toHaveURL(/\/estoque\/avaliacao-troca\/[0-9a-f-]+$/);
 
+    await page.getByRole("tab", { name: "Aquisição" }).click();
     await expect(page.getByLabel("Valor de compra")).toHaveValue("8000");
+    await page.getByRole("tab", { name: "Identificação" }).click();
 
     await page.getByLabel("Placa", { exact: true }).fill("TRC2B34");
     await page.getByLabel("Marca").fill("Honda");
