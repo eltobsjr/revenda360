@@ -4,16 +4,18 @@ Atualizado em 2026-08-07.
 
 ## Agora (próximo passo)
 
-**Tier 1 e Tier 2 completos do lado do código (Fases 8-14)** — ver devtracks
-`2026-08-07 - Tier 1 pós-MVP (...).md` e `2026-08-07 - Tier 2 pós-MVP (...).md`.
-Falta você (Enzo):
-1. Rodar `supabase/migrations/0010_fase13_comissoes.sql` no SQL Editor do
-   Supabase — sem ela, Comissões quebra. (0008 e 0009 já foram aplicadas.)
+**Tier 1, Tier 2 e Tier 3 completos do lado do código (Fases 8-17)** — ver
+devtracks `2026-08-07 - Tier 1/2/3 pós-MVP (...).md`. Falta você (Enzo):
+1. Rodar no SQL Editor do Supabase, nessa ordem:
+   `0010_fase13_comissoes.sql`, `0011_fase15_consignados.sql`,
+   `0012_fase16_fornecedores.sql`, `0013_fase17_marcas_modelos.sql`.
+   (0008 e 0009 já foram aplicadas.)
 2. Fase 7 (Deploy/CI) — Parte 1 (deploy manual na Vercel) ainda pendente,
    segue bloqueando acesso de cliente real ao sistema (Tier 0).
 
-Depois da migration aplicada e do deploy feito, seguir para o Tier 3
-(Consignados, Fornecedores, Marcas/Modelos) — ordem completa abaixo.
+Depois das migrations aplicadas e do deploy feito, seguir para o Tier 4
+(Régua de cobrança, Leads/CRM, Propostas, Renegociação) — tem mais pontos
+de decisão de negócio que os Tiers 1-3, ver notas por fase abaixo.
 
 ## Concluído
 
@@ -48,10 +50,10 @@ Guia de construção fase a fase, com prompt pronto pra cada uma, em
 7. **Comissões** (`/financeiro/comissoes`) — commit `34e8678`. ✅ (precisa da migration 0010 aplicada)
 8. **DRE por veículo** (`/financeiro/dre`) — commit `ce26288`. ✅
 
-### Tier 3 — completa o catálogo de estoque
-9. **Consignados** (`/estoque/consignados`, hoje stub) — `veiculos.status` já tem o valor `"Consignado"`, mas não existe modelagem de consignante/comissão/repasse.
-10. **Fornecedores** (`/fornecedores`, hoje stub) — hoje `veiculos.fornecedor` é texto livre, sem tabela própria.
-11. **Marcas/Modelos** (`/marcas-modelos`, hoje stub) — cadastro estruturado; hoje `veiculos.marca`/`modelo` são texto livre.
+### Tier 3 — completa o catálogo de estoque — CONCLUÍDO (código) em 2026-08-07
+9. **Consignados** (`/estoque/consignados`) — commit `5355e51`. ✅ (precisa da migration 0011 aplicada)
+10. **Fornecedores** (`/fornecedores`) — commit `7253b7c`. ✅ (precisa da migration 0012 aplicada)
+11. **Marcas/Modelos** (`/marcas-modelos`) — commit `e9f0010`. ✅ (precisa da migration 0013 aplicada)
 
 ### Tier 4 — funil de vendas
 12. **Régua de cobrança automatizada via WhatsApp** — evolução do link manual `wa.me` que já existe (Fase 5).
