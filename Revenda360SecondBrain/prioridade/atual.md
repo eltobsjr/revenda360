@@ -1,10 +1,19 @@
 # Prioridade atual — Revenda360
 
-Atualizado em 2026-08-06.
+Atualizado em 2026-08-07.
 
 ## Agora (próximo passo)
 
-**Fase 7 (Deploy/CI) — Parte 2 (CI) concluída pelo Claude Code; Parte 1 (deploy manual na Vercel) ainda pendente com o Enzo.** Ver devtrack `2026-08-06 - Fase 7 (Deploy CI).md`. Depois do deploy manual e do checklist de teste bater, seguir para a Fase 8 (Vendas realizadas) — ordem completa abaixo.
+**Tier 1 completo do lado do código (Fases 8-11)** — ver devtrack
+`2026-08-07 - Tier 1 pós-MVP (...).md`. Falta você (Enzo):
+1. Rodar `supabase/migrations/0008_fase9_avaliacao_troca.sql` e
+   `0009_fase11_contas_pagar.sql` no SQL Editor do Supabase (nessa ordem) —
+   sem elas, Avaliação/Troca e Contas a pagar quebram.
+2. Fase 7 (Deploy/CI) — Parte 1 (deploy manual na Vercel) ainda pendente,
+   segue bloqueando acesso de cliente real ao sistema (Tier 0).
+
+Depois das migrations aplicadas e do deploy feito, seguir para o Tier 2
+(Fluxo de caixa, Comissões, DRE por veículo) — ordem completa abaixo.
 
 ## Concluído
 
@@ -28,11 +37,11 @@ Guia de construção fase a fase, com prompt pronto pra cada uma, em
 ### Tier 0 — bloqueia vender pra qualquer revenda real
 1. **Deploy/CI** — **Parte 2 (CI) concluída em 2026-08-06** (`.github/workflows/ci.yml`, ver devtrack `2026-08-06 - Fase 7 (Deploy CI).md`). **Parte 1 (deploy manual na Vercel) ainda pendente com o Enzo** — sem ela nenhum cliente acessa o sistema.
 
-### Tier 1 — buracos no ciclo que já está em uso
-2. **Vendas realizadas** (`/vendas/realizadas`, hoje stub) — falta o "ver o que já vendi".
-3. **Avaliação/Troca** (`/estoque/avaliacao-troca`, hoje stub) — Nova venda já aceita troca (`venda_pagamentos.tipo = 'troca'`) mas decisão registrada foi não criar o veículo recebido no estoque a partir disso; sem esta tela, todo trade-in é um veículo que a revenda tem fisicamente mas o sistema não sabe que existe.
-4. **Clientes completo** (ficha com histórico) — hoje `/clientes` só lista/busca/cria rápido.
-5. **Contas a pagar** (`/financeiro/pagar`, hoje stub) — Financeiro só enxerga o que entra.
+### Tier 1 — buracos no ciclo que já está em uso — CONCLUÍDO (código) em 2026-08-07
+2. **Vendas realizadas** (`/vendas/realizadas`) — commit `8c2292c`. ✅
+3. **Avaliação/Troca** (`/estoque/avaliacao-troca`) — commits `ae64cc7`, `7656204`. ✅ (precisa da migration 0008 aplicada)
+4. **Clientes completo** (ficha com histórico) — commit `f939a22`. ✅
+5. **Contas a pagar** (`/financeiro/pagar`) — commit `4a617ed`. ✅ (precisa da migration 0009 aplicada)
 
 ### Tier 2 — fecha o módulo financeiro
 6. **Fluxo de caixa** (`/financeiro/fluxo-caixa`, hoje stub)
