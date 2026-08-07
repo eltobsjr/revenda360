@@ -11,7 +11,7 @@ export default async function NovaVendaPage() {
 
   const [veiculos, clientes, membros, tenantConfig] = await Promise.all([
     listVeiculos(role, { status: "Disponível" }),
-    listClientes(),
+    listClientes(role),
     listMembrosEquipe(),
     getTenantConfig(),
   ]);

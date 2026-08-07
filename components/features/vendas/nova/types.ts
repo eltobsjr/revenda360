@@ -3,7 +3,8 @@ import type { VeiculoComFinanceiro } from "@/lib/data/veiculos";
 export type ClienteOpcao = {
   id: string;
   nome: string;
-  cpf: string | null;
+  /** Ausente quando o papel do usuário não é gestor (CPF é dado sensível filtrado em `lib/data/clientes.ts`). */
+  cpf?: string | null;
   cidade: string | null;
 };
 

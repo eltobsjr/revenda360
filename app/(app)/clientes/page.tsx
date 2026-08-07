@@ -1,3 +1,4 @@
+import { getCurrentProfile } from "@/lib/auth/session";
 import { listClientes } from "@/lib/data/clientes";
 import { ClienteQuickCreate } from "@/components/features/clientes/cliente-quick-create";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,10 @@ export default async function ClientesPage({
   searchParams: Promise<{ busca?: string }>;
 }) {
   const { busca } = await searchParams;
-  const clientes = await listClientes(busca);
+  const profile = await getCurrentProfile();
+  const role = profile?.role ?? "vendedor";
+  const mostrarCpf = role === "gestor";
+  const clientes = await listClientes(role, busca);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -41,7 +45,7 @@ export default async function ClientesPage({
           <Input
             id="busca"
             name="busca"
-            placeholder="Nome ou CPF"
+            placeholder={mostrarCpf ? "Nome ou CPF" : "Nome"}
             defaultValue={busca}
             className="w-64"
           />
@@ -57,7 +61,7 @@ export default async function ClientesPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>CPF</TableHead>
+                {mostrarCpf ? <TableHead>CPF</TableHead> : null}
                 <TableHead>WhatsApp</TableHead>
                 <TableHead>Cidade</TableHead>
               </TableRow>
@@ -66,7 +70,11 @@ export default async function ClientesPage({
               {clientes.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.nome}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.cpf ?? "—"}</TableCell>
+                  {mostrarCpf ? (
+                    <TableCell className="text-muted-foreground">
+                      {"cpf" in c ? (c.cpf ?? "—") : "—"}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="text-muted-foreground">{c.whatsapp ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{c.cidade ?? "—"}</TableCell>
                 </TableRow>
