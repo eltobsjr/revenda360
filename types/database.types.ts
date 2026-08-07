@@ -349,6 +349,8 @@ export type Database = {
           garantia: string | null;
           observacoes: string | null;
           status: StatusVenda;
+          comissao_paga: boolean;
+          comissao_data_pagamento: string | null;
           criado_em: string;
         };
         Insert: {
@@ -367,6 +369,8 @@ export type Database = {
           garantia?: string | null;
           observacoes?: string | null;
           status?: StatusVenda;
+          comissao_paga?: boolean;
+          comissao_data_pagamento?: string | null;
           criado_em?: string;
         };
         Update: Partial<Database["public"]["Tables"]["vendas"]["Insert"]>;
