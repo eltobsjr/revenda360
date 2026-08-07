@@ -28,6 +28,7 @@ export type ListVendasFiltros = {
   dataInicial?: string;
   dataFinal?: string;
   status?: StatusVenda;
+  clienteId?: string;
 };
 
 export async function listVendas(
@@ -46,6 +47,7 @@ export async function listVendas(
   if (filtros.dataInicial) query = query.gte("data_venda", filtros.dataInicial);
   if (filtros.dataFinal) query = query.lte("data_venda", filtros.dataFinal);
   if (filtros.status) query = query.eq("status", filtros.status);
+  if (filtros.clienteId) query = query.eq("cliente_id", filtros.clienteId);
 
   const { data, error } = await query;
   if (error) throw new Error(`Falha ao listar vendas: ${error.message}`);

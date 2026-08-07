@@ -46,3 +46,24 @@ export async function listClientes(role: UserRole, busca?: string): Promise<Clie
     criado_em: c.criado_em,
   }));
 }
+
+/** Um cliente específico, para a ficha (Fase 10). CPF ausente fora do papel de gestor, mesmo critério de `listClientes`. */
+export async function getCliente(id: string, role: UserRole): Promise<ClienteListado | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clientes")
+    .select("id, nome, cpf, whatsapp, email, cidade, criado_em")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Falha ao buscar cliente: ${error.message}`);
+  if (!data) return null;
+  if (role === "gestor") return data;
+  return {
+    id: data.id,
+    nome: data.nome,
+    whatsapp: data.whatsapp,
+    email: data.email,
+    cidade: data.cidade,
+    criado_em: data.criado_em,
+  };
+}

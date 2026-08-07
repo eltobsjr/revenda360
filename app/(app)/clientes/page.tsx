@@ -1,16 +1,9 @@
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listClientes } from "@/lib/data/clientes";
 import { ClienteQuickCreate } from "@/components/features/clientes/cliente-quick-create";
+import { ClientesTabela } from "@/components/features/clientes/clientes-tabela";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default async function ClientesPage({
@@ -57,30 +50,7 @@ export default async function ClientesPage({
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                {mostrarCpf ? <TableHead>CPF</TableHead> : null}
-                <TableHead>WhatsApp</TableHead>
-                <TableHead>Cidade</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clientes.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.nome}</TableCell>
-                  {mostrarCpf ? (
-                    <TableCell className="text-muted-foreground">
-                      {"cpf" in c ? (c.cpf ?? "—") : "—"}
-                    </TableCell>
-                  ) : null}
-                  <TableCell className="text-muted-foreground">{c.whatsapp ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.cidade ?? "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ClientesTabela clientes={clientes} mostrarCpf={mostrarCpf} />
         </CardContent>
       </Card>
     </div>
