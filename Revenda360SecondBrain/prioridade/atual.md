@@ -4,18 +4,20 @@ Atualizado em 2026-08-07.
 
 ## Agora (próximo passo)
 
-**Tier 1, Tier 2 e Tier 3 completos do lado do código (Fases 8-17)** — ver
-devtracks `2026-08-07 - Tier 1/2/3 pós-MVP (...).md`. Falta você (Enzo):
-1. Rodar no SQL Editor do Supabase, nessa ordem:
-   `0010_fase13_comissoes.sql`, `0011_fase15_consignados.sql`,
-   `0012_fase16_fornecedores.sql`, `0013_fase17_marcas_modelos.sql`.
+**Tier 1, Tier 2, Tier 3 e Tier 4 completos do lado do código (Fases 8-17,
+19-21 — Fase 18 adiada a pedido do Enzo)** — ver devtracks
+`2026-08-07 - Tier 1/2/3/4 pós-MVP (...).md`. Falta você (Enzo):
+1. Rodar no SQL Editor do Supabase, nessa ordem: `0010_fase13_comissoes.sql`,
+   `0011_fase15_consignados.sql`, `0012_fase16_fornecedores.sql`,
+   `0013_fase17_marcas_modelos.sql`, `0014_fase19_leads.sql`,
+   `0015_fase20_propostas.sql`, `0016_fase21_renegociacao.sql`.
    (0008 e 0009 já foram aplicadas.)
 2. Fase 7 (Deploy/CI) — Parte 1 (deploy manual na Vercel) ainda pendente,
    segue bloqueando acesso de cliente real ao sistema (Tier 0).
 
-Depois das migrations aplicadas e do deploy feito, seguir para o Tier 4
-(Régua de cobrança, Leads/CRM, Propostas, Renegociação) — tem mais pontos
-de decisão de negócio que os Tiers 1-3, ver notas por fase abaixo.
+Depois das migrations aplicadas e do deploy feito, seguir para o Tier 5
+(cauda longa) — quase toda fase de lá tem decisão de negócio explícita pra
+confirmar antes de começar, ver notas por fase abaixo.
 
 ## Concluído
 
@@ -56,10 +58,10 @@ Guia de construção fase a fase, com prompt pronto pra cada uma, em
 11. **Marcas/Modelos** (`/marcas-modelos`) — commit `e9f0010`. ✅ (precisa da migration 0013 aplicada)
 
 ### Tier 4 — funil de vendas
-12. **Régua de cobrança automatizada via WhatsApp** — evolução do link manual `wa.me` que já existe (Fase 5).
-13. **Leads (CRM kanban)** (`/vendas/leads`, hoje stub)
-14. **Propostas** (`/vendas/propostas`, hoje stub)
-15. **Renegociação de contrato de crediário** — botão "Renegociar" na Inadimplência existe só como toast herdado do protótipo.
+12. **Régua de cobrança automatizada via WhatsApp** — **ADIADA a pedido do Enzo em 2026-08-07** (não quer a função agora, não é só questão de custo). Não construída, nem a versão semi-automática sem custo.
+13. **Leads (CRM kanban)** (`/vendas/leads`) — commit `4d62fd5`. ✅ (precisa da migration 0014 aplicada)
+14. **Propostas** (`/vendas/propostas`) — commit `aed4c86`. ✅ (precisa da migration 0015 aplicada)
+15. **Renegociação de contrato de crediário** (botão real em Contas a receber → Por contrato — o stub do protótipo não existia mais no código, foi construído do zero) — commit `6fa5f18`. ✅ (precisa da migration 0016 aplicada)
 
 ### Tier 5 — cauda longa
 16. Relatórios / PDF (`/relatorios`, hoje stub)
