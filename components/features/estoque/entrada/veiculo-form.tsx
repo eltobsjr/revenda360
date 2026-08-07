@@ -41,6 +41,7 @@ export function VeiculoForm({
   lojas,
   tenantId,
   fotosExistentes = [],
+  origemTrocaPagamentoId,
 }: {
   estadoInicial?: VeiculoFormState;
   veiculoId?: string;
@@ -48,6 +49,8 @@ export function VeiculoForm({
   lojas: { id: string; nome: string }[];
   tenantId: string;
   fotosExistentes?: VeiculoFotoRow[];
+  /** Fase 9 (Avaliação/Troca): liga o veículo novo de volta ao pagamento que o originou. */
+  origemTrocaPagamentoId?: string;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<VeiculoFormState>(
@@ -83,6 +86,7 @@ export function VeiculoForm({
     startTransition(async () => {
       const resultado = await salvarVeiculo({
         veiculoId,
+        origemTrocaPagamentoId,
         form: {
           tipo: form.tipo,
           placa: form.placa,

@@ -182,6 +182,7 @@ export type Database = {
           especificacoes: Record<string, unknown>;
           status: StatusVeiculo;
           observacoes: string | null;
+          origem_troca_pagamento_id: string | null;
           criado_em: string;
           atualizado_em: string;
         };
@@ -236,6 +237,7 @@ export type Database = {
           especificacoes?: Record<string, unknown>;
           status?: StatusVeiculo;
           observacoes?: string | null;
+          origem_troca_pagamento_id?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };

@@ -85,6 +85,8 @@ export async function salvarVeiculo(input: {
   veiculoId?: string;
   form: VeiculoFormInput;
   especificacoesRaw: unknown;
+  /** Só usado na criação (Fase 9, Avaliação/Troca) — liga o veículo novo de volta ao pagamento tipo "troca" que o originou. */
+  origemTrocaPagamentoId?: string;
 }): Promise<SalvarVeiculoResultado> {
   const profile = await requireProfile();
 
@@ -130,7 +132,7 @@ export async function salvarVeiculo(input: {
   } else {
     const { data, error } = await supabase
       .from("veiculos")
-      .insert(linha)
+      .insert({ ...linha, origem_troca_pagamento_id: input.origemTrocaPagamentoId ?? null })
       .select("id")
       .single();
     if (error || !data) {
@@ -175,6 +177,7 @@ export async function salvarVeiculo(input: {
 
   revalidatePath("/estoque");
   revalidatePath(`/estoque/${veiculoId}`);
+  if (input.origemTrocaPagamentoId) revalidatePath("/estoque/avaliacao-troca");
 
   return { error: null, veiculoId };
 }
