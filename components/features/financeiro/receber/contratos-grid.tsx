@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatBRL, formatDataBR } from "@/lib/format";
+import { RenegociarDialog } from "./renegociar-dialog";
 import type { ContratoRow } from "@/lib/data/contas-receber";
 
 export function ContratosGrid({ contratos }: { contratos: ContratoRow[] }) {
@@ -35,6 +36,9 @@ export function ContratosGrid({ contratos }: { contratos: ContratoRow[] }) {
                 {ct.proximoVencimento ? formatDataBR(ct.proximoVencimento) : "—"}
               </strong>
             </div>
+            {ct.saldo > 0 ? (
+              <RenegociarDialog contrato={ct} />
+            ) : null}
           </CardContent>
         </Card>
       ))}

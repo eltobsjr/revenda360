@@ -443,6 +443,7 @@ export type Database = {
           qtd_parcelas: number;
           data_primeiro_vencimento: string;
           status: string;
+          contrato_anterior_id: string | null;
           criado_em: string;
         };
         Insert: {
@@ -456,6 +457,7 @@ export type Database = {
           qtd_parcelas: number;
           data_primeiro_vencimento: string;
           status?: string;
+          contrato_anterior_id?: string | null;
           criado_em?: string;
         };
         Update: Partial<Database["public"]["Tables"]["contratos_crediario"]["Insert"]>;
@@ -786,6 +788,12 @@ export type Database = {
         Returns: UserRole;
       };
       fechar_venda: {
+        Args: {
+          payload: Record<string, unknown>;
+        };
+        Returns: string;
+      };
+      renegociar_contrato: {
         Args: {
           payload: Record<string, unknown>;
         };

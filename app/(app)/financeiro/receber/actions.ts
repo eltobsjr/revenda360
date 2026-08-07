@@ -7,11 +7,38 @@ import { createClient } from "@/lib/supabase/server";
 import { calcularDiasAtraso, calcularJurosMulta } from "@/lib/domain/juros";
 import { dataIsoLocal } from "@/lib/domain/datas";
 import { baixaParcelaSchema } from "@/lib/validation/baixa-parcela.schema";
+import { renegociarContratoSchema } from "@/lib/validation/renegociacao.schema";
 
 export type BaixaParcelaState = {
   error: string | null;
   sucesso: boolean;
 };
+
+export type RenegociarContratoResultado = {
+  novoContratoId: string | null;
+  error: string | null;
+};
+
+export async function renegociarContrato(input: unknown): Promise<RenegociarContratoResultado> {
+  await requireProfile();
+
+  const parsed = renegociarContratoSchema.safeParse(input);
+  if (!parsed.success) {
+    return { novoContratoId: null, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("renegociar_contrato", {
+    payload: parsed.data,
+  });
+
+  if (error) {
+    return { novoContratoId: null, error: "Não foi possível renegociar o contrato. " + error.message };
+  }
+
+  revalidatePath("/financeiro/receber");
+  return { novoContratoId: data, error: null };
+}
 
 export async function darBaixaParcela(
   _prevState: BaixaParcelaState,
