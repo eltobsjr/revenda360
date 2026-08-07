@@ -3,16 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { requirePlatformAdmin } from "@/lib/auth/session";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { gerarLinkDefinirSenha } from "@/lib/auth/definir-senha";
 
 export type RevendaState = {
   error: string | null;
-  senhaTemporaria: string | null;
+  linkDefinirSenha: string | null;
   emailCriado: string | null;
 };
-
-function gerarSenhaTemporaria() {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-}
 
 export async function criarRevenda(
   _prevState: RevendaState,
@@ -30,16 +27,14 @@ export async function criarRevenda(
   if (!nomeRevenda || !nomeGestor || !emailGestor || !nomeLoja) {
     return {
       error: "Informe nome da revenda, nome e e-mail do gestor e nome da loja.",
-      senhaTemporaria: null,
+      linkDefinirSenha: null,
       emailCriado: null,
     };
   }
 
-  const senha = gerarSenhaTemporaria();
   const admin = createAdminClient();
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: emailGestor,
-    password: senha,
     email_confirm: true,
   });
 
@@ -49,7 +44,7 @@ export async function criarRevenda(
         createError?.code === "email_exists"
           ? "Este e-mail já está em uso."
           : "Não foi possível criar o usuário.",
-      senhaTemporaria: null,
+      linkDefinirSenha: null,
       emailCriado: null,
     };
   }
@@ -67,11 +62,20 @@ export async function criarRevenda(
   if (provisionError) {
     return {
       error: "Usuário criado, mas houve falha ao provisionar a revenda. Contate o suporte.",
-      senhaTemporaria: null,
+      linkDefinirSenha: null,
+      emailCriado: null,
+    };
+  }
+
+  const link = await gerarLinkDefinirSenha(admin, emailGestor);
+  if (!link) {
+    return {
+      error: "Revenda criada, mas houve falha ao gerar o link de definir senha. Contate o suporte.",
+      linkDefinirSenha: null,
       emailCriado: null,
     };
   }
 
   revalidatePath("/admin");
-  return { error: null, senhaTemporaria: senha, emailCriado: emailGestor };
+  return { error: null, linkDefinirSenha: link, emailCriado: emailGestor };
 }

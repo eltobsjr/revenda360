@@ -1,12 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { login } from "../actions";
 import { AUTH_INITIAL_STATE } from "../auth-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
+
+function LinkInvalidoNotice() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("erro") !== "link-invalido") return null;
+  return (
+    <p className="text-sm text-destructive">
+      Este link de definir senha é inválido ou expirou. Peça um novo pra quem
+      administra sua revenda.
+    </p>
+  );
+}
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, AUTH_INITIAL_STATE);
@@ -18,6 +30,9 @@ export default function LoginPage() {
       description="Estoque, vendas, crediário e caixa — sem planilha, sem perder o controle."
     >
       <h1 className="font-heading mb-6 text-2xl font-semibold">Entrar</h1>
+      <Suspense>
+        <LinkInvalidoNotice />
+      </Suspense>
       <form action={formAction} className="flex flex-col gap-4">
         <FormField label="E-mail" htmlFor="email">
           <Input id="email" name="email" type="email" autoComplete="email" required />

@@ -24,6 +24,15 @@ const AUTH_ONLY_PATHS = ["/login"];
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  // `/auth/confirm` resolve o token de "definir senha" e troca a sessão pra
+  // quem está no link — precisa rodar mesmo se o navegador já tiver uma
+  // sessão de outra conta (ex.: o gestor testando o link que acabou de
+  // gerar), senão o redirect de "já autenticado" abaixo intercepta antes do
+  // handler trocar a sessão.
+  if (request.nextUrl.pathname.startsWith("/auth/confirm")) {
+    return response;
+  }
+
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,

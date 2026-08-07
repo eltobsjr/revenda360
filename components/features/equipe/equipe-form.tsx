@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { FormField } from "@/components/form-field";
 import { Card, CardContent } from "@/components/ui/card";
+import { CopyLinkField } from "@/components/copy-link-field";
 
 export function EquipeForm({ lojas }: { lojas: { id: string; nome: string }[] }) {
   const [state, formAction, pending] = useActionState(
@@ -15,18 +16,16 @@ export function EquipeForm({ lojas }: { lojas: { id: string; nome: string }[] })
     EQUIPE_INITIAL_STATE,
   );
 
-  if (state.senhaTemporaria) {
+  if (state.linkDefinirSenha) {
     return (
       <Card className="border-success/40 bg-success/10">
         <CardContent className="text-sm">
           <p className="font-semibold">Usuário criado com sucesso.</p>
           <p className="mt-1">
-            Envie estas credenciais para <strong>{state.emailCriado}</strong> —
-            peça para trocar a senha no primeiro acesso:
+            Envie este link para <strong>{state.emailCriado}</strong> — é assim
+            que a pessoa escolhe a própria senha:
           </p>
-          <p className="mt-2 rounded-md bg-background px-3 py-2 font-mono text-sm">
-            {state.senhaTemporaria}
-          </p>
+          <CopyLinkField link={state.linkDefinirSenha} label="Link para definir senha" />
         </CardContent>
       </Card>
     );

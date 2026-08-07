@@ -74,9 +74,11 @@ test.describe("Fase 0 — login, equipe, tema (tenant provisionado como o painel
     });
   });
 
-  test("vendedor recém-criado consegue logar com a senha temporária", async ({
+  test("vendedor recém-criado escolhe a própria senha pelo link e consegue logar", async ({
     page,
   }) => {
+    const senhaEscolhida = "SenhaEscolhidaPeloVendedor456";
+
     await page.goto("/login");
     await page.getByLabel("E-mail").fill(gestorEmail);
     await page.getByLabel("Senha").fill(SENHA);
@@ -88,14 +90,25 @@ test.describe("Fase 0 — login, equipe, tema (tenant provisionado como o painel
     await page.getByLabel("E-mail").fill(vendedorEmail);
     await page.getByRole("button", { name: "Adicionar à equipe" }).click();
 
-    const senhaTemporaria = await page.locator("p.font-mono").textContent();
-    expect(senhaTemporaria).toBeTruthy();
+    const link = await page.getByLabel("Link para definir senha").inputValue();
+    expect(link).toContain("/auth/confirm");
+
+    await page.getByRole("button", { name: "Sair" }).click();
+    await expect(page).toHaveURL(/\/login/);
+
+    await page.goto(link);
+    await expect(page).toHaveURL(/\/definir-senha/);
+    await page.getByLabel("Nova senha").fill(senhaEscolhida);
+    await page.getByLabel("Confirmar senha").fill(senhaEscolhida);
+    await page.getByRole("button", { name: "Salvar senha e entrar" }).click();
+
+    await expect(page).toHaveURL(/\/dashboard/);
 
     await page.getByRole("button", { name: "Sair" }).click();
     await expect(page).toHaveURL(/\/login/);
 
     await page.getByLabel("E-mail").fill(vendedorEmail);
-    await page.getByLabel("Senha").fill(senhaTemporaria!.trim());
+    await page.getByLabel("Senha").fill(senhaEscolhida);
     await page.getByRole("button", { name: "Entrar" }).click();
 
     await expect(page).toHaveURL(/\/dashboard/);

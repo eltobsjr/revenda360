@@ -3,17 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { gerarLinkDefinirSenha } from "@/lib/auth/definir-senha";
 import type { UserRole } from "@/types/database.types";
 
 export type EquipeState = {
   error: string | null;
-  senhaTemporaria: string | null;
+  linkDefinirSenha: string | null;
   emailCriado: string | null;
 };
-
-function gerarSenhaTemporaria() {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-}
 
 export async function criarMembroEquipe(
   _prevState: EquipeState,
@@ -27,17 +24,15 @@ export async function criarMembroEquipe(
   const lojaId = String(formData.get("lojaId") || "") || null;
 
   if (!nome || !email) {
-    return { error: "Informe nome e e-mail.", senhaTemporaria: null, emailCriado: null };
+    return { error: "Informe nome e e-mail.", linkDefinirSenha: null, emailCriado: null };
   }
   if (!["vendedor", "financeiro", "gestor"].includes(role)) {
-    return { error: "Papel inválido.", senhaTemporaria: null, emailCriado: null };
+    return { error: "Papel inválido.", linkDefinirSenha: null, emailCriado: null };
   }
 
-  const senha = gerarSenhaTemporaria();
   const admin = createAdminClient();
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
-    password: senha,
     email_confirm: true,
   });
 
@@ -47,7 +42,7 @@ export async function criarMembroEquipe(
         createError?.code === "email_exists"
           ? "Este e-mail já está em uso."
           : "Não foi possível criar o usuário.",
-      senhaTemporaria: null,
+      linkDefinirSenha: null,
       emailCriado: null,
     };
   }
@@ -63,11 +58,20 @@ export async function criarMembroEquipe(
   if (profileError) {
     return {
       error: "Usuário criado, mas houve falha ao vincular o perfil. Contate o suporte.",
-      senhaTemporaria: null,
+      linkDefinirSenha: null,
+      emailCriado: null,
+    };
+  }
+
+  const link = await gerarLinkDefinirSenha(admin, email);
+  if (!link) {
+    return {
+      error: "Usuário criado, mas houve falha ao gerar o link de definir senha. Contate o suporte.",
+      linkDefinirSenha: null,
       emailCriado: null,
     };
   }
 
   revalidatePath("/equipe");
-  return { error: null, senhaTemporaria: senha, emailCriado: email };
+  return { error: null, linkDefinirSenha: link, emailCriado: email };
 }
