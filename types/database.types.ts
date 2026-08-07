@@ -39,6 +39,8 @@ export type EtapaLead =
   | "Ganho"
   | "Perdido";
 
+export type StatusProposta = "Em aberto" | "Aceita" | "Recusada" | "Expirada";
+
 export type Database = {
   public: {
     Tables: {
@@ -699,6 +701,51 @@ export type Database = {
             columns: ["vendedor_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      propostas: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          veiculo_id: string;
+          cliente_id: string | null;
+          cliente_nome_avulso: string | null;
+          valor_proposto: number;
+          condicoes: string | null;
+          status: StatusProposta;
+          validade: string | null;
+          vendedor_id: string;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          veiculo_id: string;
+          cliente_id?: string | null;
+          cliente_nome_avulso?: string | null;
+          valor_proposto: number;
+          condicoes?: string | null;
+          status?: StatusProposta;
+          validade?: string | null;
+          vendedor_id: string;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["propostas"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "propostas_veiculo_id_fkey";
+            columns: ["veiculo_id"];
+            isOneToOne: false;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "propostas_cliente_id_fkey";
+            columns: ["cliente_id"];
+            isOneToOne: false;
+            referencedRelation: "clientes";
             referencedColumns: ["id"];
           },
         ];

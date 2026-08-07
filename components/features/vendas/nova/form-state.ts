@@ -28,19 +28,19 @@ export type NovaVendaFormState = {
 
 export function estadoInicialNovaVenda(
   vendedorId: string,
-  clienteIdInicial?: string,
+  inicial?: { clienteId?: string; veiculoId?: string; valorVenda?: string },
 ): NovaVendaFormState {
   const hoje = new Date();
   const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
 
   return {
-    veiculoId: "",
+    veiculoId: inicial?.veiculoId ?? "",
 
-    clienteId: clienteIdInicial ?? "",
+    clienteId: inicial?.clienteId ?? "",
     clienteNovoNome: "",
     clienteNovoCpf: "",
 
-    valorVenda: "",
+    valorVenda: inicial?.valorVenda ?? "",
     desconto: "0",
     temTroca: false,
     trocaDescricao: "",

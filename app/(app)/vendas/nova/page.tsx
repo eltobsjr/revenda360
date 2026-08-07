@@ -8,9 +8,9 @@ import { NovaVendaWizard } from "@/components/features/vendas/nova/nova-venda-wi
 export default async function NovaVendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ clienteId?: string }>;
+  searchParams: Promise<{ clienteId?: string; veiculoId?: string; valorVenda?: string }>;
 }) {
-  const { clienteId } = await searchParams;
+  const { clienteId, veiculoId, valorVenda } = await searchParams;
   const profile = await getCurrentProfile();
   const role = profile?.role ?? "vendedor";
 
@@ -44,6 +44,8 @@ export default async function NovaVendaPage({
         vendedorAtualId={vendedorAtualId}
         margemMinimaPctDefault={tenantConfig.margem_minima_pct_default}
         clienteIdInicial={clienteId}
+        veiculoIdInicial={veiculoId}
+        valorVendaInicial={valorVenda}
       />
     </div>
   );

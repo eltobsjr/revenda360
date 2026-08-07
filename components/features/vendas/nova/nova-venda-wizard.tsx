@@ -34,18 +34,26 @@ export function NovaVendaWizard({
   vendedorAtualId,
   margemMinimaPctDefault,
   clienteIdInicial,
+  veiculoIdInicial,
+  valorVendaInicial,
 }: {
   veiculos: VeiculoOpcao[];
   clientes: ClienteOpcao[];
   vendedores: VendedorOpcao[];
   vendedorAtualId: string;
   margemMinimaPctDefault: number;
-  /** Fase 19 (Leads) e Fase 20 (Propostas): pré-seleciona o cliente ao converter em venda. */
+  /** Fase 19 (Leads) e Fase 20 (Propostas): pré-seleciona cliente/veículo/valor ao converter em venda. */
   clienteIdInicial?: string;
+  veiculoIdInicial?: string;
+  valorVendaInicial?: string;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<NovaVendaFormState>(
-    estadoInicialNovaVenda(vendedorAtualId, clienteIdInicial),
+    estadoInicialNovaVenda(vendedorAtualId, {
+      clienteId: clienteIdInicial,
+      veiculoId: veiculoIdInicial,
+      valorVenda: valorVendaInicial,
+    }),
   );
   const [etapa, setEtapa] = useState<string>("veiculo");
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
