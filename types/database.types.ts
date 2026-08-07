@@ -606,6 +606,52 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["fornecedores"]["Insert"]>;
         Relationships: [];
       };
+      marcas: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          nome: string;
+          ativo: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          nome: string;
+          ativo?: boolean;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["marcas"]["Insert"]>;
+        Relationships: [];
+      };
+      modelos: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          marca_id: string;
+          nome: string;
+          ativo: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          marca_id: string;
+          nome: string;
+          ativo?: boolean;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["modelos"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "modelos_marca_id_fkey";
+            columns: ["marca_id"];
+            isOneToOne: false;
+            referencedRelation: "marcas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

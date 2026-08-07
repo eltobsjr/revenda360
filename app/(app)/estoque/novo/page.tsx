@@ -1,13 +1,15 @@
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listLojas } from "@/lib/data/equipe";
 import { listFornecedoresOpcoes } from "@/lib/data/fornecedores";
+import { listMarcasComModelosAtivos } from "@/lib/data/marcas-modelos";
 import { VeiculoForm } from "@/components/features/estoque/entrada/veiculo-form";
 
 export default async function NovoVeiculoPage() {
-  const [profile, lojas, fornecedores] = await Promise.all([
+  const [profile, lojas, fornecedores, marcas] = await Promise.all([
     getCurrentProfile(),
     listLojas(),
     listFornecedoresOpcoes(),
+    listMarcasComModelosAtivos(),
   ]);
   const role = profile?.role ?? "vendedor";
 
@@ -23,6 +25,7 @@ export default async function NovoVeiculoPage() {
         isGestor={role === "gestor"}
         lojas={lojas}
         fornecedores={fornecedores}
+        marcas={marcas}
         tenantId={profile?.tenantId ?? ""}
       />
     </div>

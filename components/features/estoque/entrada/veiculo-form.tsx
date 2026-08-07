@@ -23,6 +23,7 @@ import {
   type VeiculoFormState,
 } from "./form-state";
 import type { VeiculoFotoRow } from "./types";
+import type { MarcaComModelos } from "@/lib/data/marcas-modelos";
 
 const TABS = [
   { id: "identificacao", label: "Identificação" },
@@ -40,6 +41,7 @@ export function VeiculoForm({
   isGestor,
   lojas,
   fornecedores = [],
+  marcas = [],
   tenantId,
   fotosExistentes = [],
   origemTrocaPagamentoId,
@@ -49,6 +51,7 @@ export function VeiculoForm({
   isGestor: boolean;
   lojas: { id: string; nome: string }[];
   fornecedores?: { id: string; nome: string }[];
+  marcas?: MarcaComModelos[];
   tenantId: string;
   fotosExistentes?: VeiculoFotoRow[];
   /** Fase 9 (Avaliação/Troca): liga o veículo novo de volta ao pagamento que o originou. */
@@ -241,7 +244,7 @@ export function VeiculoForm({
             </TabsList>
 
             <TabsContent value="identificacao" className="pt-4">
-              <IdentificacaoTab form={form} patch={patch} />
+              <IdentificacaoTab form={form} patch={patch} marcas={marcas} />
             </TabsContent>
             <TabsContent value="documentacao" className="pt-4">
               <DocumentacaoTab form={form} patch={patch} />

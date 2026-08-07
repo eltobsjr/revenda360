@@ -2,15 +2,18 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { FormField } from "@/components/form-field";
 import { Checkbox } from "@/components/ui/checkbox";
+import { MarcaModeloSelect } from "./marca-modelo-select";
 import { OPCIONAIS_CARRO, ACESSORIOS_MOTO } from "@/lib/validation/veiculo.schema";
 import type { VeiculoFormState } from "./form-state";
+import type { MarcaComModelos } from "@/lib/data/marcas-modelos";
 
 type Props = {
   form: VeiculoFormState;
   patch: (p: Partial<VeiculoFormState>) => void;
+  marcas: MarcaComModelos[];
 };
 
-export function IdentificacaoTab({ form, patch }: Props) {
+export function IdentificacaoTab({ form, patch, marcas }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -46,6 +49,11 @@ export function IdentificacaoTab({ form, patch }: Props) {
             onChange={(e) => patch({ numeroMotor: e.target.value })}
           />
         </FormField>
+        <MarcaModeloSelect
+          marcas={marcas}
+          onMarcaChange={(nome) => patch({ marca: nome || form.marca })}
+          onModeloChange={(nome) => patch({ modelo: nome || form.modelo })}
+        />
         <FormField label="Marca" htmlFor="marca">
           <Input
             id="marca"
