@@ -3,7 +3,7 @@ import { PackagePlus } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listVeiculos, listMarcasDisponiveis } from "@/lib/data/veiculos";
 import { getTenantConfig } from "@/lib/data/tenant";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EstoqueFiltros } from "@/components/features/estoque/estoque-filtros";
 import { VeiculoTabela } from "@/components/features/estoque/veiculo-tabela";
@@ -50,10 +50,10 @@ export default async function EstoquePage({
             {veiculos.length} veículo{veiculos.length === 1 ? "" : "s"} no estoque
           </p>
         </div>
-        <Button render={<Link href="/estoque/novo" />} nativeButton={false}>
+        <Link href="/estoque/novo" className={buttonVariants()}>
           <PackagePlus />
           Entrada de veículo
-        </Button>
+        </Link>
       </div>
 
       <Card>

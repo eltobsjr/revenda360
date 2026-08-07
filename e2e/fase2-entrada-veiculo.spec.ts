@@ -104,7 +104,7 @@ test.describe("Fase 2 — Entrada de veículo", () => {
     await page.getByRole("button", { name: "Cadastrar veículo" }).click();
     await expect(page).toHaveURL(/\/estoque\/[0-9a-f-]+$/);
 
-    await page.getByRole("button", { name: "Editar" }).click();
+    await page.getByRole("link", { name: "Editar" }).click();
     await expect(page).toHaveURL(/\/editar$/);
     await page.getByLabel("Modelo", { exact: true }).fill("Fazer 250 Blueflex");
     await page.getByRole("button", { name: "Salvar alterações" }).click();

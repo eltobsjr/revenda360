@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { linkCobrancaWhatsapp } from "@/lib/domain/whatsapp";
@@ -41,24 +41,18 @@ export function InadimplenciaTable({ linhas }: { linhas: InadimplenciaRow[] }) {
                 </TableCell>
                 <TableCell>
                   {r.whatsapp ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      nativeButton={false}
-                      render={
-                        <a
-                          href={linkCobrancaWhatsapp(
-                            r.whatsapp,
-                            `Olá, ${r.cliente}! Identificamos um valor em atraso de ${formatBRL(r.valorEmAtraso)} referente ao seu contrato conosco. Podemos combinar o pagamento?`,
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        />
-                      }
+                    <a
+                      href={linkCobrancaWhatsapp(
+                        r.whatsapp,
+                        `Olá, ${r.cliente}! Identificamos um valor em atraso de ${formatBRL(r.valorEmAtraso)} referente ao seu contrato conosco. Podemos combinar o pagamento?`,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={buttonVariants({ size: "sm", variant: "outline" })}
                     >
                       <MessageCircle className="size-3.5" />
                       Cobrar
-                    </Button>
+                    </a>
                   ) : null}
                 </TableCell>
               </TableRow>

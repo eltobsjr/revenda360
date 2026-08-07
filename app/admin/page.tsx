@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { listTenants } from "@/lib/data/admin";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -25,10 +25,10 @@ export default async function AdminPage() {
             {tenants.length === 1 ? "" : "s"}
           </p>
         </div>
-        <Button render={<Link href="/admin/revendas/nova" />} nativeButton={false}>
+        <Link href="/admin/revendas/nova" className={buttonVariants()}>
           <Building2 />
           Nova revenda
-        </Button>
+        </Link>
       </div>
 
       <Card>

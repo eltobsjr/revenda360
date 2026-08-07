@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 const STATUS_OPCOES = [
   "Disponível",
@@ -82,14 +82,9 @@ export function EstoqueFiltros({
       <Button type="submit" size="sm">
         Filtrar
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        render={<Link href="/estoque" />}
-        nativeButton={false}
-      >
+      <Link href="/estoque" className={buttonVariants({ variant: "outline", size: "sm" })}>
         Limpar
-      </Button>
+      </Link>
     </form>
   );
 }

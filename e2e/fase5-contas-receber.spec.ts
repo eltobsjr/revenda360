@@ -169,7 +169,7 @@ test.describe("Fase 5 — Contas a receber", () => {
     await expect(linha.getByText("R$ 1.500,00")).toBeVisible();
     await expect(linha.getByText("1–15 dias")).toBeVisible();
 
-    const linkCobrar = linha.getByRole("button", { name: "Cobrar" });
+    const linkCobrar = linha.getByRole("link", { name: "Cobrar" });
     await expect(linkCobrar).toHaveAttribute("href", /^https:\/\/wa\.me\/5511988887777\?text=/);
     await expect(linkCobrar).toHaveAttribute("target", "_blank");
   });

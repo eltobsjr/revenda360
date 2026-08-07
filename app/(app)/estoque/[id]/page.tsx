@@ -4,7 +4,7 @@ import { AlertTriangle, Pencil } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getVeiculo } from "@/lib/data/veiculos";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { VeiculoStatusBadge } from "@/components/features/estoque/veiculo-status-badge";
 import { ResumoTab } from "@/components/features/estoque/ficha/resumo-tab";
@@ -49,15 +49,13 @@ export default async function FichaVeiculoPage({
           <span className="tabular-nums text-lg font-semibold">
             {formatBRL(veiculo.preco_venda)}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={`/estoque/${veiculo.id}/editar`} />}
-            nativeButton={false}
+          <Link
+            href={`/estoque/${veiculo.id}/editar`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             <Pencil />
             Editar
-          </Button>
+          </Link>
         </div>
       </div>
 
