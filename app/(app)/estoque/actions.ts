@@ -130,9 +130,17 @@ export async function salvarVeiculo(input: {
       return { error: `Não foi possível salvar o veículo: ${error.message}`, veiculoId: null };
     }
   } else {
+    // Só inclui a coluna no INSERT quando realmente usada (Fase 9, Avaliação/
+    // Troca) — ela é nova (migration 0008) e pode ainda não existir no banco
+    // de quem não aplicou a migration ainda; incluí-la sempre (mesmo com
+    // null) quebraria a Entrada de veículo normal (Fase 2) até lá.
     const { data, error } = await supabase
       .from("veiculos")
-      .insert({ ...linha, origem_troca_pagamento_id: input.origemTrocaPagamentoId ?? null })
+      .insert(
+        input.origemTrocaPagamentoId
+          ? { ...linha, origem_troca_pagamento_id: input.origemTrocaPagamentoId }
+          : linha,
+      )
       .select("id")
       .single();
     if (error || !data) {
