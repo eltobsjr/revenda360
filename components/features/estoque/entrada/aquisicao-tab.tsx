@@ -15,11 +15,15 @@ export function AquisicaoTab({
   form,
   patch,
   lojas,
+  criando,
 }: {
   form: VeiculoFormState;
   patch: (p: Partial<VeiculoFormState>) => void;
   lojas: { id: string; nome: string }[];
+  criando: boolean;
 }) {
+  const mostrarConsignacao = criando && form.origem === "Consignado";
+
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       <FormField label="Data de entrada" htmlFor="dataEntrada">
@@ -82,6 +86,35 @@ export function AquisicaoTab({
             ))}
           </NativeSelect>
         </FormField>
+      ) : null}
+
+      {mostrarConsignacao ? (
+        <>
+          <FormField label="Nome do consignante" htmlFor="consignanteNome">
+            <Input
+              id="consignanteNome"
+              value={form.consignanteNome}
+              onChange={(e) => patch({ consignanteNome: e.target.value })}
+              required
+            />
+          </FormField>
+          <FormField label="Contato do consignante" htmlFor="consignanteContato">
+            <Input
+              id="consignanteContato"
+              value={form.consignanteContato}
+              onChange={(e) => patch({ consignanteContato: e.target.value })}
+            />
+          </FormField>
+          <FormField label="Valor de repasse combinado" htmlFor="valorRepasse">
+            <Input
+              id="valorRepasse"
+              type="number"
+              value={form.valorRepasse}
+              onChange={(e) => patch({ valorRepasse: e.target.value })}
+              required
+            />
+          </FormField>
+        </>
       ) : null}
     </div>
   );

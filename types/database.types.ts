@@ -543,6 +543,45 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["contas_pagar"]["Insert"]>;
         Relationships: [];
       };
+      consignacoes: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          veiculo_id: string;
+          consignante_nome: string;
+          consignante_contato: string | null;
+          valor_repasse: number;
+          contas_pagar_id: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          veiculo_id: string;
+          consignante_nome: string;
+          consignante_contato?: string | null;
+          valor_repasse: number;
+          contas_pagar_id?: string | null;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["consignacoes"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "consignacoes_veiculo_id_fkey";
+            columns: ["veiculo_id"];
+            isOneToOne: true;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "consignacoes_contas_pagar_id_fkey";
+            columns: ["contas_pagar_id"];
+            isOneToOne: false;
+            referencedRelation: "contas_pagar";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

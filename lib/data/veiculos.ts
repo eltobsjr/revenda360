@@ -35,7 +35,7 @@ export type VeiculoDetalhe = VeiculoComFinanceiro & {
 export type ListVeiculosFiltros = {
   busca?: string;
   tipo?: TipoVeiculo;
-  status?: StatusVeiculo;
+  status?: StatusVeiculo | StatusVeiculo[];
   marca?: string;
 };
 
@@ -79,7 +79,11 @@ export async function listVeiculosComFinanceiro(
     .order("criado_em", { ascending: false });
 
   if (filtros.tipo) query = query.eq("tipo", filtros.tipo);
-  if (filtros.status) query = query.eq("status", filtros.status);
+  if (filtros.status) {
+    query = Array.isArray(filtros.status)
+      ? query.in("status", filtros.status)
+      : query.eq("status", filtros.status);
+  }
   if (filtros.marca) query = query.eq("marca", filtros.marca);
   if (filtros.busca) {
     // Mesma limpeza feita em `listClientes`: `,`, `(` e `)` têm significado na

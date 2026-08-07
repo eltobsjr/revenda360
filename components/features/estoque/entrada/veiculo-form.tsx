@@ -81,12 +81,26 @@ export function VeiculoForm({
       return;
     }
 
+    const criandoConsignado = !veiculoId && form.origem === "Consignado";
+    if (criandoConsignado && (!form.consignanteNome || !numero(form.valorRepasse))) {
+      setErro("Preencha nome do consignante e valor de repasse na aba Aquisição.");
+      setAba("aquisicao");
+      return;
+    }
+
     const especificacoesRaw = especificacoesParaPayload(form);
 
     startTransition(async () => {
       const resultado = await salvarVeiculo({
         veiculoId,
         origemTrocaPagamentoId,
+        consignacao: criandoConsignado
+          ? {
+              consignanteNome: form.consignanteNome,
+              consignanteContato: form.consignanteContato,
+              valorRepasse: numero(form.valorRepasse),
+            }
+          : undefined,
         form: {
           tipo: form.tipo,
           placa: form.placa,
@@ -230,7 +244,7 @@ export function VeiculoForm({
               <DocumentacaoTab form={form} patch={patch} />
             </TabsContent>
             <TabsContent value="aquisicao" className="pt-4">
-              <AquisicaoTab form={form} patch={patch} lojas={lojas} />
+              <AquisicaoTab form={form} patch={patch} lojas={lojas} criando={!veiculoId} />
             </TabsContent>
             <TabsContent value="custos" className="pt-4">
               <CustosTab form={form} patch={patch} />

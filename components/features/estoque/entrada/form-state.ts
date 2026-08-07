@@ -54,6 +54,11 @@ export type VeiculoFormState = {
   valorCompra: string;
   formaPagCompra: string;
   lojaId: string;
+  // Só usados quando origem === "Consignado" e o veículo está sendo criado
+  // agora (Fase 15) — ver AquisicaoTab.
+  consignanteNome: string;
+  consignanteContato: string;
+  valorRepasse: string;
 
   valorFipe: string;
   precoVenda: string;
@@ -147,6 +152,9 @@ export function estadoInicialVeiculoForm(tipo: "carro" | "moto"): VeiculoFormSta
     valorCompra: "",
     formaPagCompra: "",
     lojaId: "",
+    consignanteNome: "",
+    consignanteContato: "",
+    valorRepasse: "",
 
     valorFipe: "",
     precoVenda: "",

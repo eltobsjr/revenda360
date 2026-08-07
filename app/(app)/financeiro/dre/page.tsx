@@ -38,7 +38,9 @@ export default async function DrePage({
   const totalCustoAquisicao = linhas.reduce((soma, l) => soma + l.custoAquisicao, 0);
   const totalCustosLancados = linhas.reduce((soma, l) => soma + l.custosLancados, 0);
   const totalComissao = linhas.reduce((soma, l) => soma + l.comissao, 0);
+  const totalRepasse = linhas.reduce((soma, l) => soma + l.repasseConsignacao, 0);
   const totalMargem = linhas.reduce((soma, l) => soma + l.margemR, 0);
+  const temConsignacao = linhas.some((l) => l.repasseConsignacao > 0);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -92,6 +94,9 @@ export default async function DrePage({
                   <TableHead className="text-right">Custo de aquisição</TableHead>
                   <TableHead className="text-right">Custos lançados</TableHead>
                   <TableHead className="text-right">Comissão</TableHead>
+                  {temConsignacao ? (
+                    <TableHead className="text-right">Repasse consignação</TableHead>
+                  ) : null}
                   <TableHead className="text-right">Margem R$</TableHead>
                   <TableHead className="text-right">Margem %</TableHead>
                 </TableRow>
@@ -114,6 +119,11 @@ export default async function DrePage({
                     <TableCell className="text-right tabular-nums text-muted-foreground">
                       {formatBRL(l.comissao)}
                     </TableCell>
+                    {temConsignacao ? (
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {l.repasseConsignacao > 0 ? formatBRL(l.repasseConsignacao) : "—"}
+                      </TableCell>
+                    ) : null}
                     <TableCell
                       className={cn(
                         "text-right tabular-nums font-semibold",
@@ -140,6 +150,9 @@ export default async function DrePage({
                   <TableCell className="text-right tabular-nums">{formatBRL(totalCustoAquisicao)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatBRL(totalCustosLancados)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatBRL(totalComissao)}</TableCell>
+                  {temConsignacao ? (
+                    <TableCell className="text-right tabular-nums">{formatBRL(totalRepasse)}</TableCell>
+                  ) : null}
                   <TableCell
                     className={cn(
                       "text-right tabular-nums font-semibold",

@@ -87,6 +87,8 @@ export async function salvarVeiculo(input: {
   especificacoesRaw: unknown;
   /** Só usado na criação (Fase 9, Avaliação/Troca) — liga o veículo novo de volta ao pagamento tipo "troca" que o originou. */
   origemTrocaPagamentoId?: string;
+  /** Só usado na criação, quando origem === "Consignado" (Fase 15) — cria a linha em consignacoes junto com o veículo. */
+  consignacao?: { consignanteNome: string; consignanteContato?: string; valorRepasse: number };
 }): Promise<SalvarVeiculoResultado> {
   const profile = await requireProfile();
 
@@ -130,17 +132,20 @@ export async function salvarVeiculo(input: {
       return { error: `Não foi possível salvar o veículo: ${error.message}`, veiculoId: null };
     }
   } else {
-    // Só inclui a coluna no INSERT quando realmente usada (Fase 9, Avaliação/
-    // Troca) — ela é nova (migration 0008) e pode ainda não existir no banco
-    // de quem não aplicou a migration ainda; incluí-la sempre (mesmo com
-    // null) quebraria a Entrada de veículo normal (Fase 2) até lá.
+    // Só inclui colunas/campos novos no INSERT quando realmente usados — são
+    // migrations recentes (0008 Avaliação/Troca, 0011 Consignados) e podem
+    // ainda não existir no banco de quem não aplicou a migration; incluí-las
+    // sempre (mesmo com null/default) quebraria a Entrada de veículo normal
+    // (Fase 2) pra quem está atrasado com as migrations.
     const { data, error } = await supabase
       .from("veiculos")
-      .insert(
-        input.origemTrocaPagamentoId
-          ? { ...linha, origem_troca_pagamento_id: input.origemTrocaPagamentoId }
-          : linha,
-      )
+      .insert({
+        ...linha,
+        ...(input.origemTrocaPagamentoId
+          ? { origem_troca_pagamento_id: input.origemTrocaPagamentoId }
+          : {}),
+        ...(input.consignacao ? { status: "Consignado" as const } : {}),
+      })
       .select("id")
       .single();
     if (error || !data) {
@@ -150,6 +155,22 @@ export async function salvarVeiculo(input: {
       };
     }
     veiculoId = data.id;
+
+    if (input.consignacao) {
+      const { error: consignacaoError } = await supabase.from("consignacoes").insert({
+        tenant_id: profile.tenantId,
+        veiculo_id: veiculoId,
+        consignante_nome: input.consignacao.consignanteNome,
+        consignante_contato: input.consignacao.consignanteContato || null,
+        valor_repasse: input.consignacao.valorRepasse,
+      });
+      if (consignacaoError) {
+        return {
+          error: `Veículo salvo, mas houve falha ao registrar a consignação: ${consignacaoError.message}`,
+          veiculoId,
+        };
+      }
+    }
   }
 
   const { error: delCustosError } = await supabase
@@ -186,6 +207,7 @@ export async function salvarVeiculo(input: {
   revalidatePath("/estoque");
   revalidatePath(`/estoque/${veiculoId}`);
   if (input.origemTrocaPagamentoId) revalidatePath("/estoque/avaliacao-troca");
+  if (input.consignacao) revalidatePath("/estoque/consignados");
 
   return { error: null, veiculoId };
 }

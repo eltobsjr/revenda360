@@ -10,7 +10,7 @@ export default async function NovaVendaPage() {
   const role = profile?.role ?? "vendedor";
 
   const [veiculos, clientes, membros, tenantConfig] = await Promise.all([
-    listVeiculos(role, { status: "Disponível" }),
+    listVeiculos(role, { status: ["Disponível", "Consignado"] }),
     listClientes(role),
     listMembrosEquipe(),
     getTenantConfig(),
