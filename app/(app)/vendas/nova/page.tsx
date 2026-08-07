@@ -5,7 +5,12 @@ import { listMembrosEquipe } from "@/lib/data/equipe";
 import { getTenantConfig } from "@/lib/data/tenant";
 import { NovaVendaWizard } from "@/components/features/vendas/nova/nova-venda-wizard";
 
-export default async function NovaVendaPage() {
+export default async function NovaVendaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clienteId?: string }>;
+}) {
+  const { clienteId } = await searchParams;
   const profile = await getCurrentProfile();
   const role = profile?.role ?? "vendedor";
 
@@ -38,6 +43,7 @@ export default async function NovaVendaPage() {
         vendedores={vendedores}
         vendedorAtualId={vendedorAtualId}
         margemMinimaPctDefault={tenantConfig.margem_minima_pct_default}
+        clienteIdInicial={clienteId}
       />
     </div>
   );

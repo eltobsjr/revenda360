@@ -31,6 +31,14 @@ export type TipoPagamento =
 
 export type StatusParcela = "A vencer" | "Paga" | "Atrasada" | "Parcial" | "Renegociada";
 
+export type EtapaLead =
+  | "Novo"
+  | "Em contato"
+  | "Visita agendada"
+  | "Proposta enviada"
+  | "Ganho"
+  | "Perdido";
+
 export type Database = {
   public: {
     Tables: {
@@ -648,6 +656,49 @@ export type Database = {
             columns: ["marca_id"];
             isOneToOne: false;
             referencedRelation: "marcas";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      leads: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          nome: string;
+          contato: string | null;
+          origem: string | null;
+          veiculo_interesse_id: string | null;
+          vendedor_id: string | null;
+          etapa: EtapaLead;
+          observacoes: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          nome: string;
+          contato?: string | null;
+          origem?: string | null;
+          veiculo_interesse_id?: string | null;
+          vendedor_id?: string | null;
+          etapa?: EtapaLead;
+          observacoes?: string | null;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["leads"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "leads_veiculo_interesse_id_fkey";
+            columns: ["veiculo_interesse_id"];
+            isOneToOne: false;
+            referencedRelation: "veiculos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "leads_vendedor_id_fkey";
+            columns: ["vendedor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];

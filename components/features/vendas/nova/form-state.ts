@@ -26,14 +26,17 @@ export type NovaVendaFormState = {
   observacoes: string;
 };
 
-export function estadoInicialNovaVenda(vendedorId: string): NovaVendaFormState {
+export function estadoInicialNovaVenda(
+  vendedorId: string,
+  clienteIdInicial?: string,
+): NovaVendaFormState {
   const hoje = new Date();
   const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
 
   return {
     veiculoId: "",
 
-    clienteId: "",
+    clienteId: clienteIdInicial ?? "",
     clienteNovoNome: "",
     clienteNovoCpf: "",
 
