@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { FormField } from "@/components/form-field";
+import { FornecedorSelect } from "./fornecedor-select";
 import type { VeiculoFormState } from "./form-state";
 
 const ORIGENS = [
@@ -15,11 +16,13 @@ export function AquisicaoTab({
   form,
   patch,
   lojas,
+  fornecedores,
   criando,
 }: {
   form: VeiculoFormState;
   patch: (p: Partial<VeiculoFormState>) => void;
   lojas: { id: string; nome: string }[];
+  fornecedores: { id: string; nome: string }[];
   criando: boolean;
 }) {
   const mostrarConsignacao = criando && form.origem === "Consignado";
@@ -48,7 +51,14 @@ export function AquisicaoTab({
           ))}
         </NativeSelect>
       </FormField>
-      <FormField label="Fornecedor/proprietário anterior" htmlFor="fornecedor">
+      <FormField label="Fornecedor cadastrado" htmlFor="fornecedorId">
+        <FornecedorSelect
+          fornecedores={fornecedores}
+          value={form.fornecedorId}
+          onChange={(fornecedorId, nome) => patch({ fornecedorId, fornecedor: nome || form.fornecedor })}
+        />
+      </FormField>
+      <FormField label="Fornecedor/proprietário anterior (texto livre)" htmlFor="fornecedor">
         <Input
           id="fornecedor"
           value={form.fornecedor}

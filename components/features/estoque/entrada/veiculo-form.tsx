@@ -39,6 +39,7 @@ export function VeiculoForm({
   veiculoId,
   isGestor,
   lojas,
+  fornecedores = [],
   tenantId,
   fotosExistentes = [],
   origemTrocaPagamentoId,
@@ -47,6 +48,7 @@ export function VeiculoForm({
   veiculoId?: string;
   isGestor: boolean;
   lojas: { id: string; nome: string }[];
+  fornecedores?: { id: string; nome: string }[];
   tenantId: string;
   fotosExistentes?: VeiculoFotoRow[];
   /** Fase 9 (Avaliação/Troca): liga o veículo novo de volta ao pagamento que o originou. */
@@ -142,6 +144,7 @@ export function VeiculoForm({
           dataEntrada: form.dataEntrada,
           origem: form.origem,
           fornecedor: form.fornecedor,
+          fornecedorId: form.fornecedorId,
           valorCompra: numero(form.valorCompra),
           formaPagCompra: form.formaPagCompra,
           lojaId: form.lojaId,
@@ -244,7 +247,13 @@ export function VeiculoForm({
               <DocumentacaoTab form={form} patch={patch} />
             </TabsContent>
             <TabsContent value="aquisicao" className="pt-4">
-              <AquisicaoTab form={form} patch={patch} lojas={lojas} criando={!veiculoId} />
+              <AquisicaoTab
+                form={form}
+                patch={patch}
+                lojas={lojas}
+                fornecedores={fornecedores}
+                criando={!veiculoId}
+              />
             </TabsContent>
             <TabsContent value="custos" className="pt-4">
               <CustosTab form={form} patch={patch} />

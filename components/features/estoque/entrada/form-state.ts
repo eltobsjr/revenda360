@@ -51,6 +51,8 @@ export type VeiculoFormState = {
     | "Repasse de outra loja"
     | "Consignado";
   fornecedor: string;
+  /** FK opcional pra fornecedores (Fase 16) — fornecedor (texto livre) continua sendo o que a ficha exibe, mantido em sincronia quando um fornecedor cadastrado é selecionado. */
+  fornecedorId: string;
   valorCompra: string;
   formaPagCompra: string;
   lojaId: string;
@@ -149,6 +151,7 @@ export function estadoInicialVeiculoForm(tipo: "carro" | "moto"): VeiculoFormSta
     dataEntrada: hoje,
     origem: "Compra de particular",
     fornecedor: "",
+    fornecedorId: "",
     valorCompra: "",
     formaPagCompra: "",
     lojaId: "",
@@ -239,6 +242,7 @@ export function veiculoParaFormState(v: VeiculoDetalhe): VeiculoFormState {
     dataEntrada: v.data_entrada,
     origem: v.origem as VeiculoFormState["origem"],
     fornecedor: v.fornecedor ?? "",
+    fornecedorId: v.fornecedor_id ?? "",
     // `valor_compra` e `preco_minimo` não vêm do servidor fora do papel de
     // gestor (`ocultarCamposSensiveis`) — sem o optional chaining, abrir a
     // edição de um veículo como vendedor quebrava a página.

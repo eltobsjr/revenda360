@@ -178,6 +178,7 @@ export const veiculoFormSchema = z.object({
     .enum(["Compra de particular", "Troca", "Leilão", "Repasse de outra loja", "Consignado"])
     .default("Compra de particular"),
   fornecedor: z.string().optional(),
+  fornecedorId: z.string().optional(),
   valorCompra: z.number().min(0),
   formaPagCompra: z.string().optional(),
   lojaId: z.string().optional(),

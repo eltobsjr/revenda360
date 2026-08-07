@@ -183,6 +183,7 @@ export type Database = {
           status: StatusVeiculo;
           observacoes: string | null;
           origem_troca_pagamento_id: string | null;
+          fornecedor_id: string | null;
           criado_em: string;
           atualizado_em: string;
         };
@@ -238,6 +239,7 @@ export type Database = {
           status?: StatusVeiculo;
           observacoes?: string | null;
           origem_troca_pagamento_id?: string | null;
+          fornecedor_id?: string | null;
           criado_em?: string;
           atualizado_em?: string;
         };
@@ -581,6 +583,28 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      fornecedores: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          nome: string;
+          contato: string | null;
+          cnpj_cpf: string | null;
+          observacoes: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          nome: string;
+          contato?: string | null;
+          cnpj_cpf?: string | null;
+          observacoes?: string | null;
+          criado_em?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["fornecedores"]["Insert"]>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

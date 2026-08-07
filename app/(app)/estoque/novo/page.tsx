@@ -1,9 +1,14 @@
 import { getCurrentProfile } from "@/lib/auth/session";
 import { listLojas } from "@/lib/data/equipe";
+import { listFornecedoresOpcoes } from "@/lib/data/fornecedores";
 import { VeiculoForm } from "@/components/features/estoque/entrada/veiculo-form";
 
 export default async function NovoVeiculoPage() {
-  const [profile, lojas] = await Promise.all([getCurrentProfile(), listLojas()]);
+  const [profile, lojas, fornecedores] = await Promise.all([
+    getCurrentProfile(),
+    listLojas(),
+    listFornecedoresOpcoes(),
+  ]);
   const role = profile?.role ?? "vendedor";
 
   return (
@@ -17,6 +22,7 @@ export default async function NovoVeiculoPage() {
       <VeiculoForm
         isGestor={role === "gestor"}
         lojas={lojas}
+        fornecedores={fornecedores}
         tenantId={profile?.tenantId ?? ""}
       />
     </div>

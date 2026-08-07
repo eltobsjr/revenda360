@@ -126,14 +126,22 @@ export async function salvarVeiculo(input: {
 
     const { error } = await supabase
       .from("veiculos")
-      .update({ ...alteracoes, atualizado_em: new Date().toISOString() })
+      .update({
+        ...alteracoes,
+        // fornecedor_id é coluna nova (migration 0012) — só entra no UPDATE
+        // quando de fato selecionada, mesmo motivo do guard de
+        // origem_troca_pagamento_id/consignacao abaixo.
+        ...(parsed.data.fornecedorId ? { fornecedor_id: parsed.data.fornecedorId } : {}),
+        atualizado_em: new Date().toISOString(),
+      })
       .eq("id", veiculoId);
     if (error) {
       return { error: `Não foi possível salvar o veículo: ${error.message}`, veiculoId: null };
     }
   } else {
     // Só inclui colunas/campos novos no INSERT quando realmente usados — são
-    // migrations recentes (0008 Avaliação/Troca, 0011 Consignados) e podem
+    // migrations recentes (0008 Avaliação/Troca, 0011 Consignados, 0012
+    // Fornecedores) e podem
     // ainda não existir no banco de quem não aplicou a migration; incluí-las
     // sempre (mesmo com null/default) quebraria a Entrada de veículo normal
     // (Fase 2) pra quem está atrasado com as migrations.
@@ -145,6 +153,7 @@ export async function salvarVeiculo(input: {
           ? { origem_troca_pagamento_id: input.origemTrocaPagamentoId }
           : {}),
         ...(input.consignacao ? { status: "Consignado" as const } : {}),
+        ...(parsed.data.fornecedorId ? { fornecedor_id: parsed.data.fornecedorId } : {}),
       })
       .select("id")
       .single();

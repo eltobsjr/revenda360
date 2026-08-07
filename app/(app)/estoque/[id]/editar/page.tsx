@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { getVeiculo } from "@/lib/data/veiculos";
 import { listLojas } from "@/lib/data/equipe";
+import { listFornecedoresOpcoes } from "@/lib/data/fornecedores";
 import { VeiculoForm } from "@/components/features/estoque/entrada/veiculo-form";
 import { veiculoParaFormState } from "@/components/features/estoque/entrada/form-state";
 
@@ -14,7 +15,11 @@ export default async function EditarVeiculoPage({
   const profile = await getCurrentProfile();
   const role = profile?.role ?? "vendedor";
 
-  const [veiculo, lojas] = await Promise.all([getVeiculo(id, role), listLojas()]);
+  const [veiculo, lojas, fornecedores] = await Promise.all([
+    getVeiculo(id, role),
+    listLojas(),
+    listFornecedoresOpcoes(),
+  ]);
   if (!veiculo) notFound();
 
   return (
@@ -30,6 +35,7 @@ export default async function EditarVeiculoPage({
         veiculoId={veiculo.id}
         isGestor={role === "gestor"}
         lojas={lojas}
+        fornecedores={fornecedores}
         tenantId={profile?.tenantId ?? ""}
         fotosExistentes={veiculo.fotos}
       />
