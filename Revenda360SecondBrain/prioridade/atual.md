@@ -4,16 +4,16 @@ Atualizado em 2026-08-07.
 
 ## Agora (próximo passo)
 
-**Tier 1 completo do lado do código (Fases 8-11)** — ver devtrack
-`2026-08-07 - Tier 1 pós-MVP (...).md`. Falta você (Enzo):
-1. Rodar `supabase/migrations/0008_fase9_avaliacao_troca.sql` e
-   `0009_fase11_contas_pagar.sql` no SQL Editor do Supabase (nessa ordem) —
-   sem elas, Avaliação/Troca e Contas a pagar quebram.
+**Tier 1 e Tier 2 completos do lado do código (Fases 8-14)** — ver devtracks
+`2026-08-07 - Tier 1 pós-MVP (...).md` e `2026-08-07 - Tier 2 pós-MVP (...).md`.
+Falta você (Enzo):
+1. Rodar `supabase/migrations/0010_fase13_comissoes.sql` no SQL Editor do
+   Supabase — sem ela, Comissões quebra. (0008 e 0009 já foram aplicadas.)
 2. Fase 7 (Deploy/CI) — Parte 1 (deploy manual na Vercel) ainda pendente,
    segue bloqueando acesso de cliente real ao sistema (Tier 0).
 
-Depois das migrations aplicadas e do deploy feito, seguir para o Tier 2
-(Fluxo de caixa, Comissões, DRE por veículo) — ordem completa abaixo.
+Depois da migration aplicada e do deploy feito, seguir para o Tier 3
+(Consignados, Fornecedores, Marcas/Modelos) — ordem completa abaixo.
 
 ## Concluído
 
@@ -43,10 +43,10 @@ Guia de construção fase a fase, com prompt pronto pra cada uma, em
 4. **Clientes completo** (ficha com histórico) — commit `f939a22`. ✅
 5. **Contas a pagar** (`/financeiro/pagar`) — commit `4a617ed`. ✅ (precisa da migration 0009 aplicada)
 
-### Tier 2 — fecha o módulo financeiro
-6. **Fluxo de caixa** (`/financeiro/fluxo-caixa`, hoje stub)
-7. **Comissões** (`/financeiro/comissoes`, hoje stub) — `vendas.comissao_valor` já existe, falta a tela de gestão/pagamento.
-8. **DRE por veículo** (`/financeiro/dre`, hoje stub)
+### Tier 2 — fecha o módulo financeiro — CONCLUÍDO (código) em 2026-08-07
+6. **Fluxo de caixa** (`/financeiro/fluxo-caixa`) — commit `78a9c99`. ✅
+7. **Comissões** (`/financeiro/comissoes`) — commit `34e8678`. ✅ (precisa da migration 0010 aplicada)
+8. **DRE por veículo** (`/financeiro/dre`) — commit `ce26288`. ✅
 
 ### Tier 3 — completa o catálogo de estoque
 9. **Consignados** (`/estoque/consignados`, hoje stub) — `veiculos.status` já tem o valor `"Consignado"`, mas não existe modelagem de consignante/comissão/repasse.
