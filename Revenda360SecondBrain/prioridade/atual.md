@@ -1,8 +1,31 @@
 # Prioridade atual — Revenda360
 
-Atualizado em 2026-08-07.
+Atualizado em 2026-08-08.
 
-## Agora (próximo passo)
+## Agora (próximo passo) — URGENTE
+
+**Auditoria técnica completa concluída em 2026-08-08** (segurança, bugs
+funcionais, dependências, qualidade) — ver devtrack
+`2026-08-08 - Auditoria técnica completa (segurança, bugs, qualidade).md`.
+Achou e corrigiu uma **vulnerabilidade crítica ativa**: qualquer usuário
+autenticado conseguia se auto-promover a `gestor` direto pelo client do
+navegador (bug na RLS de `profiles`, migration 0001), contornando 100% da
+autorização do Next.js. Também corrigiu um bug financeiro crítico
+(renegociação de contrato causava dívida em dobro no Dashboard e permitia
+baixar parcela já substituída) e vários vazamentos de dado financeiro
+sensível pra role errada.
+
+**Você precisa, nessa ordem, o quanto antes**:
+1. **Rodar `supabase/migrations/0017_auditoria_seguranca_2026-08-08.sql`** —
+   crítico, fecha a auto-escalação de privilégio, que está ativa agora.
+2. **Rotacionar a senha das 3 contas demo** (`demo.gestor@revenda360.app`,
+   `demo.vendedor@revenda360.app`, `demo.financeiro@revenda360.app`) — a
+   senha estava em texto puro num arquivo commitado desde 2026-08-05,
+   removida do arquivo mas ainda no histórico do git.
+3. Rodar `supabase/migrations/0012_fase16_fornecedores.sql` (pendência
+   antiga, não relacionada a esta auditoria).
+
+## Pendência anterior (Tier 1-4 pós-MVP)
 
 **Tier 1, Tier 2, Tier 3 e Tier 4 completos do lado do código (Fases 8-17,
 19-21 — Fase 18 adiada a pedido do Enzo)** — ver devtracks
