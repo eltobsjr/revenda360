@@ -6,17 +6,26 @@ Atualizado em 2026-08-07.
 
 **Tier 1, Tier 2, Tier 3 e Tier 4 completos do lado do código (Fases 8-17,
 19-21 — Fase 18 adiada a pedido do Enzo)** — ver devtracks
-`2026-08-07 - Tier 1/2/3/4 pós-MVP (...).md`. Falta você (Enzo):
-1. Rodar no SQL Editor do Supabase, nessa ordem: `0010_fase13_comissoes.sql`,
-   `0011_fase15_consignados.sql`, `0012_fase16_fornecedores.sql`,
-   `0013_fase17_marcas_modelos.sql`, `0014_fase19_leads.sql`,
-   `0015_fase20_propostas.sql`, `0016_fase21_renegociacao.sql`.
-   (0008 e 0009 já foram aplicadas.)
+`2026-08-07 - Tier 1/2/3/4 pós-MVP (...).md`. **Atualizado 2026-08-07 à
+noite (2ª verificação)**: das 7 migrations pendentes, 6 estão confirmadas
+aplicadas (0010, 0011, 0013, 0014, 0015, 0016). Verificando o E2E completo
+depois disso também achei e corrigi 3 bugs reais (não relacionados a
+migration) que só apareciam com as tabelas novas existindo — ver devtracks
+`2026-08-07 - Verificação pós-migrations e 3 bugs reais corrigidos.md` e
+`2026-08-07 - Resumo do dia (Tiers 1-4 pós-MVP completos + correções).md`,
+commit `3e2547b`. **A `0012_fase16_fornecedores.sql` foi checada de novo
+à noite, depois do Enzo confirmar que já tinha rodado todos os SQLs, e
+`public.fornecedores` continua não existindo no schema** — checar direto
+no banco antes de assumir aplicada, essa migration especificamente já
+"escapou" duas vezes. Falta você (Enzo):
+1. Rodar no SQL Editor do Supabase: **`0012_fase16_fornecedores.sql`**
+   (a única que ainda falta).
 2. Fase 7 (Deploy/CI) — Parte 1 (deploy manual na Vercel) ainda pendente,
    segue bloqueando acesso de cliente real ao sistema (Tier 0).
 
-Depois das migrations aplicadas e do deploy feito, seguir para o Tier 5
-(cauda longa) — quase toda fase de lá tem decisão de negócio explícita pra
+E2E atual: 41/43 (as 2 falhas são só fase16-fornecedores, esperando a
+0012). Depois dela aplicada e do deploy feito, seguir para o Tier 5 (cauda
+longa) — quase toda fase de lá tem decisão de negócio explícita pra
 confirmar antes de começar, ver notas por fase abaixo.
 
 ## Concluído
