@@ -27,7 +27,7 @@ export default async function ContasPagarPage({
     ? (status as StatusParcela)
     : undefined;
 
-  const contas = await listContasPagar(filtroStatus);
+  const contas = await listContasPagar(role, filtroStatus);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

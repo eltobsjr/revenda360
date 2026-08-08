@@ -34,7 +34,7 @@ export default async function ComissoesPage({
   const dataInicial = `${mesFiltro}-01`;
   const dataFinal = ultimoDiaDoMes(mesFiltro);
 
-  const comissoes = await listComissoesPorVendedor(dataInicial, dataFinal);
+  const comissoes = await listComissoesPorVendedor(dataInicial, dataFinal, role);
   const totalPago = comissoes.reduce((soma, c) => soma + c.totalPago, 0);
   const totalPendente = comissoes.reduce((soma, c) => soma + c.totalPendente, 0);
 

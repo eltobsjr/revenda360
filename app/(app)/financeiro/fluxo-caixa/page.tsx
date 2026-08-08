@@ -20,7 +20,7 @@ export default async function FluxoCaixaPage() {
   // Mesmo critério de Contas a pagar (Fase 11): informação financeira interna.
   if (role === "vendedor") redirect("/dashboard");
 
-  const meses = await getFluxoCaixa(12);
+  const meses = await getFluxoCaixa(role, 12);
   const totalEntradas = meses.reduce((soma, m) => soma + m.entradas, 0);
   const totalSaidas = meses.reduce((soma, m) => soma + m.saidas, 0);
   const saldoFinal = meses.at(-1)?.saldoAcumulado ?? 0;

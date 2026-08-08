@@ -42,7 +42,7 @@ export default async function NovaVendaPage({
         clientes={clientes}
         vendedores={vendedores}
         vendedorAtualId={vendedorAtualId}
-        margemMinimaPctDefault={tenantConfig.margem_minima_pct_default}
+        margemMinimaPctDefault={role === "gestor" ? tenantConfig.margem_minima_pct_default : 0}
         clienteIdInicial={clienteId}
         veiculoIdInicial={veiculoId}
         valorVendaInicial={valorVenda}

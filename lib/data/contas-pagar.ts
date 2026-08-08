@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { statusEfetivo, calcularDiasAtraso, type StatusParcela } from "@/lib/domain/juros";
+import type { UserRole } from "@/types/database.types";
 
 export type ContaPagarRow = {
   id: string;
@@ -15,8 +16,17 @@ export type ContaPagarRow = {
   podeBaixar: boolean;
 };
 
-/** Todas as contas a pagar do tenant, com status efetivo calculado — mesmo critério de `listParcelas` (Contas a receber). */
-export async function listContasPagar(filtroStatus?: StatusParcela): Promise<ContaPagarRow[]> {
+/**
+ * Todas as contas a pagar do tenant, com status efetivo calculado — mesmo
+ * critério de `listParcelas` (Contas a receber). Dado financeiro interno:
+ * só gestor e financeiro (a tela já redireciona vendedor; filtro replicado
+ * aqui como defesa em profundidade).
+ */
+export async function listContasPagar(
+  role: UserRole,
+  filtroStatus?: StatusParcela,
+): Promise<ContaPagarRow[]> {
+  if (role === "vendedor") return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("contas_pagar")

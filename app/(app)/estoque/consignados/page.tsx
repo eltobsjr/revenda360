@@ -19,8 +19,8 @@ export default async function ConsignadosPage() {
   const mostrarFinanceiro = role === "gestor";
 
   const [disponiveis, vendidos] = await Promise.all([
-    listConsignacoesDisponiveis(),
-    listConsignacoesVendidas(),
+    listConsignacoesDisponiveis(role),
+    listConsignacoesVendidas(role),
   ]);
 
   return (

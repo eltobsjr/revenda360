@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/types/database.types";
 
 export type ComissaoVendaLinha = {
   vendaId: string;
@@ -17,11 +18,17 @@ export type ComissaoVendedor = {
   vendas: ComissaoVendaLinha[];
 };
 
-/** Comissão de vendas confirmadas no período, agrupada por vendedor. */
+/**
+ * Comissão de vendas confirmadas no período, agrupada por vendedor. É dado
+ * de remuneração interna — 100% gestor. A tela hoje já redireciona quem não
+ * é gestor; o filtro fica aqui também (defesa em profundidade).
+ */
 export async function listComissoesPorVendedor(
   dataInicial: string,
   dataFinal: string,
+  role: UserRole,
 ): Promise<ComissaoVendedor[]> {
+  if (role !== "gestor") return [];
   const supabase = await createClient();
   const { data: vendas, error } = await supabase
     .from("vendas")

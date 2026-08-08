@@ -1,14 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { agruparFluxoCaixaPorMes, type MesFluxoCaixa } from "@/lib/domain/fluxo-caixa";
+import type { UserRole } from "@/types/database.types";
 
 /**
  * Entradas: parcelas de crediário pagas + pagamentos à vista (qualquer tipo
  * exceto "crediario" — já contado via parcela — e "troca" — não é dinheiro).
  * Saídas: contas a pagar pagas + custos de veículo lançados. Puramente
  * leitura agregada sobre tabelas que já existem (Fases 4, 5, 11) — sem
- * tabela nova.
+ * tabela nova. Dado financeiro interno: só gestor e financeiro (a tela já
+ * redireciona vendedor; filtro replicado aqui como defesa em profundidade).
  */
-export async function getFluxoCaixa(meses = 12): Promise<MesFluxoCaixa[]> {
+export async function getFluxoCaixa(role: UserRole, meses = 12): Promise<MesFluxoCaixa[]> {
+  if (role === "vendedor") return [];
   const supabase = await createClient();
   const hoje = new Date();
   const inicioJanela = new Date(hoje.getFullYear(), hoje.getMonth() - (meses - 1), 1)

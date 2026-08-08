@@ -23,7 +23,7 @@ export default async function CompletarTrocaPage({
   const estadoInicial = {
     ...estadoInicialVeiculoForm("carro"),
     origem: "Troca" as const,
-    valorCompra: troca.valor.toString(),
+    valorCompra: (troca.valor ?? 0).toString(),
     observacoes: `Recebido na troca: ${troca.descricao}`,
   };
 

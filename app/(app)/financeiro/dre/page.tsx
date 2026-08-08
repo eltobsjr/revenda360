@@ -33,7 +33,7 @@ export default async function DrePage({
   const filtroInicial = dataInicial || inicioPadrao;
   const filtroFinal = dataFinal || hoje.toISOString().slice(0, 10);
 
-  const linhas = await listDrePorVeiculo(filtroInicial, filtroFinal);
+  const linhas = await listDrePorVeiculo(filtroInicial, filtroFinal, role);
   const totalPrecoVenda = linhas.reduce((soma, l) => soma + l.precoVenda, 0);
   const totalCustoAquisicao = linhas.reduce((soma, l) => soma + l.custoAquisicao, 0);
   const totalCustosLancados = linhas.reduce((soma, l) => soma + l.custosLancados, 0);

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/types/database.types";
 
 export type ConsignacaoDisponivel = {
   id: string;
@@ -7,7 +8,7 @@ export type ConsignacaoDisponivel = {
   placa: string;
   consignanteNome: string;
   consignanteContato: string | null;
-  valorRepasse: number;
+  valorRepasse: number | null;
   precoVenda: number;
 };
 
@@ -16,15 +17,20 @@ export type ConsignacaoVendida = {
   veiculo: string;
   placa: string;
   consignanteNome: string;
-  valorRepasse: number;
+  valorRepasse: number | null;
   valorVenda: number;
   /** Valor de venda − repasse ao consignante (comissão fixa, decisão confirmada com o Enzo na Fase 15). */
-  comissaoRevenda: number;
+  comissaoRevenda: number | null;
   dataVenda: string;
 };
 
-/** Consignados ainda não vendidos — `contas_pagar_id` só é preenchido por `fechar_venda` quando o veículo é vendido. */
-export async function listConsignacoesDisponiveis(): Promise<ConsignacaoDisponivel[]> {
+/**
+ * Consignados ainda não vendidos — `contas_pagar_id` só é preenchido por
+ * `fechar_venda` quando o veículo é vendido. Repasse é dado financeiro
+ * equivalente a custo/margem — só gestor vê (filtrado aqui, não só no
+ * componente visual).
+ */
+export async function listConsignacoesDisponiveis(role: UserRole): Promise<ConsignacaoDisponivel[]> {
   const supabase = await createClient();
   const { data: consignacoes, error } = await supabase
     .from("consignacoes")
@@ -50,14 +56,17 @@ export async function listConsignacoesDisponiveis(): Promise<ConsignacaoDisponiv
       placa: veiculo?.placa ?? "—",
       consignanteNome: c.consignante_nome,
       consignanteContato: c.consignante_contato,
-      valorRepasse: c.valor_repasse,
+      valorRepasse: role === "gestor" ? c.valor_repasse : null,
       precoVenda: veiculo?.preco_venda ?? 0,
     };
   });
 }
 
-/** Consignados já vendidos — mostra o repasse combinado x quanto ficou de comissão pra revenda. */
-export async function listConsignacoesVendidas(): Promise<ConsignacaoVendida[]> {
+/**
+ * Consignados já vendidos — mostra o repasse combinado x quanto ficou de
+ * comissão pra revenda. Mesmo critério de filtro por role do que acima.
+ */
+export async function listConsignacoesVendidas(role: UserRole): Promise<ConsignacaoVendida[]> {
   const supabase = await createClient();
   const { data: consignacoes, error } = await supabase
     .from("consignacoes")
@@ -91,9 +100,9 @@ export async function listConsignacoesVendidas(): Promise<ConsignacaoVendida[]> 
         veiculo: veiculo ? `${veiculo.marca} ${veiculo.modelo}` : "Veículo",
         placa: veiculo?.placa ?? "—",
         consignanteNome: c.consignante_nome,
-        valorRepasse: c.valor_repasse,
+        valorRepasse: role === "gestor" ? c.valor_repasse : null,
         valorVenda,
-        comissaoRevenda: valorVenda - c.valor_repasse,
+        comissaoRevenda: role === "gestor" ? valorVenda - c.valor_repasse : null,
         dataVenda: venda?.data_venda ?? "",
       };
     })

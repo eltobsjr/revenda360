@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { listTrocasPendentes } from "@/lib/data/avaliacao-troca";
+import { getCurrentProfile } from "@/lib/auth/session";
 import { formatBRL, formatDataBR } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function AvaliacaoTrocaPage() {
-  const pendentes = await listTrocasPendentes();
+  const profile = await getCurrentProfile();
+  const pendentes = await listTrocasPendentes(profile?.role ?? "vendedor");
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
@@ -36,7 +38,9 @@ export default async function AvaliacaoTrocaPage() {
                   Recebido na venda de {p.veiculoVendido} para {p.cliente} —{" "}
                   {formatDataBR(p.dataVenda)}
                 </p>
-                <p className="text-lg font-semibold tabular-nums">{formatBRL(p.valor)}</p>
+                {p.valor !== null ? (
+                  <p className="text-lg font-semibold tabular-nums">{formatBRL(p.valor)}</p>
+                ) : null}
                 <Link
                   href={`/estoque/avaliacao-troca/${p.pagamentoId}`}
                   className={buttonVariants({ size: "sm", className: "mt-2 self-start" })}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { custoTotal, margemPct as calcMargemPct } from "@/lib/domain/pricing";
+import type { UserRole } from "@/types/database.types";
 
 /**
  * DRE por veículo: mesma fórmula de lucro já usada no Dashboard
@@ -22,7 +23,18 @@ export type DreLinha = {
   margemPct: number;
 };
 
-export async function listDrePorVeiculo(dataInicial: string, dataFinal: string): Promise<DreLinha[]> {
+/**
+ * DRE completo (custo, comissão, margem) é 100% gestor — hoje a única tela
+ * que chama isso já redireciona quem não é gestor, mas o filtro fica aqui
+ * também (defesa em profundidade), pra qualquer chamador futuro não vazar
+ * a informação financeira mais sensível do sistema por engano.
+ */
+export async function listDrePorVeiculo(
+  dataInicial: string,
+  dataFinal: string,
+  role: UserRole,
+): Promise<DreLinha[]> {
+  if (role !== "gestor") return [];
   const supabase = await createClient();
   const { data: vendas, error } = await supabase
     .from("vendas")
