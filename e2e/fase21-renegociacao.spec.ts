@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import {
   uniqueEmail,
   createConfirmedUser,
@@ -132,5 +134,56 @@ test.describe("Fase 21 — Renegociação de contrato", () => {
       .eq("contrato_id", novoContrato!.id);
     expect(count).toBe(3);
     expect(parcelasNovas?.every((p) => p.status === "A vencer")).toBe(true);
+
+    // Regressão do achado crítico da auditoria de 2026-08-08: o contrato
+    // renegociado não pode continuar aparecendo como se ainda tivesse
+    // dívida em aberto — só o carnê novo deve oferecer "Renegociar" (senão
+    // o saldo do cliente conta em dobro no Dashboard e a parcela antiga
+    // continuaria com botão de baixa ativo).
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Renegociar" })).toHaveCount(1);
+
+    // As parcelas do contrato antigo (status "Renegociada") não devem mais
+    // aparecer na visão "Por parcela" — se aparecessem, ainda teriam botão
+    // de baixa funcional numa dívida que já foi substituída.
+    await page.goto("/financeiro/receber?mode=parcela");
+    await expect(page.getByText("Renegociada")).toHaveCount(0);
+  });
+
+  test("não permite renegociar o mesmo contrato duas vezes", async () => {
+    const anon = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    );
+    await anon.auth.signInWithPassword({ email: gestorEmail, password: SENHA });
+
+    const hoje = new Date().toISOString().slice(0, 10);
+    const { error: primeiraError } = await anon.rpc("renegociar_contrato", {
+      payload: {
+        contratoId,
+        qtdParcelas: 2,
+        taxaJurosMensal: 0,
+        dataPrimeiroVencimento: hoje,
+        parcelas: [
+          { numero: 1, vencimento: hoje, valor: 5000 },
+          { numero: 2, vencimento: hoje, valor: 5000 },
+        ],
+      },
+    });
+    expect(primeiraError).toBeNull();
+
+    const { error: segundaError } = await anon.rpc("renegociar_contrato", {
+      payload: {
+        contratoId,
+        qtdParcelas: 2,
+        taxaJurosMensal: 0,
+        dataPrimeiroVencimento: hoje,
+        parcelas: [
+          { numero: 1, vencimento: hoje, valor: 5000 },
+          { numero: 2, vencimento: hoje, valor: 5000 },
+        ],
+      },
+    });
+    expect(segundaError).not.toBeNull();
   });
 });

@@ -44,7 +44,7 @@ export async function darBaixaParcela(
   _prevState: BaixaParcelaState,
   formData: FormData,
 ): Promise<BaixaParcelaState> {
-  await requireProfile();
+  const profile = await requireProfile();
 
   const parsed = baixaParcelaSchema.safeParse({
     parcelaId: String(formData.get("parcelaId") ?? ""),
@@ -62,6 +62,7 @@ export async function darBaixaParcela(
     .from("parcelas")
     .select("id, vencimento, valor, status")
     .eq("id", parcelaId)
+    .eq("tenant_id", profile.tenantId)
     .maybeSingle();
   if (parcelaError) {
     return { error: "Não foi possível carregar a parcela. " + parcelaError.message, sucesso: false };
@@ -71,6 +72,9 @@ export async function darBaixaParcela(
   }
   if (parcela.status === "Paga") {
     return { error: "Esta parcela já foi baixada.", sucesso: false };
+  }
+  if (parcela.status === "Renegociada") {
+    return { error: "Esta parcela foi renegociada e não representa mais dívida em aberto.", sucesso: false };
   }
 
   const tenantConfig = await getTenantConfig();
@@ -82,7 +86,12 @@ export async function darBaixaParcela(
     tenantConfig.multa_pct,
     tenantConfig.mora_pct_dia,
   );
-  const valorPago = Math.max(0, parcela.valor + juros - desconto);
+  // Sem isso, um desconto digitado maior que a própria dívida zerava o
+  // valor a receber mas gravava `desconto_aplicado` com o número exagerado
+  // (ex.: 10000 numa parcela de 500) — a prévia na tela já mostra "R$ 0,00"
+  // pro usuário, mas nada impedia o submit nem corrigia o valor persistido.
+  const descontoEfetivo = Math.min(desconto, parcela.valor + juros);
+  const valorPago = Math.max(0, parcela.valor + juros - descontoEfetivo);
 
   // O `neq` é a trava contra duas baixas simultâneas da mesma parcela (dois
   // cliques, duas abas): quem chegar depois não atualiza linha nenhuma. Sem o
@@ -93,11 +102,12 @@ export async function darBaixaParcela(
       status: "Paga",
       valor_pago: valorPago,
       data_pagamento: dataIsoLocal(hoje),
-      desconto_aplicado: desconto,
+      desconto_aplicado: descontoEfetivo,
       juros_multa_aplicado: juros,
       forma_pagamento: formaPagamento,
     })
     .eq("id", parcelaId)
+    .eq("tenant_id", profile.tenantId)
     .neq("status", "Paga")
     .select("id");
   if (updateError) {

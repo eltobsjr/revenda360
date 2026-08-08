@@ -55,13 +55,23 @@ type ContratoBase = {
   cliente_id: string | null;
   veiculo_id: string;
   venda_id: string;
+  status: string;
 };
 
+/**
+ * Contratos "Renegociado" ficam de fora daqui — foram substituídos por um
+ * contrato novo (`contrato_anterior_id`) e suas parcelas não pagas viraram
+ * 'Renegociada'. Incluí-los faria o saldo/parcelas do contrato antigo
+ * contarem em dobro junto com o carnê novo (achado da auditoria de
+ * 2026-08-08: bug real, já causava valor "a receber" inflado no Dashboard e
+ * permitia dar baixa numa parcela que não representa mais dívida real).
+ */
 async function carregarContratosBase(): Promise<Map<string, ContratoBase>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("contratos_crediario")
-    .select("id, qtd_parcelas, valor_total, cliente_id, veiculo_id, venda_id");
+    .select("id, qtd_parcelas, valor_total, cliente_id, veiculo_id, venda_id, status")
+    .neq("status", "Renegociado");
   if (error) throw new Error(`Falha ao listar contratos de crediário: ${error.message}`);
 
   const mapa = new Map<string, ContratoBase>();
@@ -165,7 +175,7 @@ export async function listParcelas(filtroStatus?: StatusParcela): Promise<Parcel
       valorPago: p.valor_pago,
       status,
       diasAtraso: status === "Atrasada" || status === "Parcial" ? calcularDiasAtraso(p.vencimento, hoje) : 0,
-      podeBaixar: status !== "Paga",
+      podeBaixar: status !== "Paga" && status !== "Renegociada",
       whatsapp: whatsappCliente(contrato),
     };
   });
@@ -276,7 +286,7 @@ export async function getParcelaParaBaixa(parcelaId: string): Promise<{
 
   const { data: contratoRow, error: contratoError } = await supabase
     .from("contratos_crediario")
-    .select("id, qtd_parcelas, cliente_id, veiculo_id, venda_id")
+    .select("id, qtd_parcelas, cliente_id, veiculo_id, venda_id, status")
     .eq("id", parcela.contrato_id)
     .single();
   if (contratoError) throw new Error(`Falha ao buscar contrato da parcela: ${contratoError.message}`);
