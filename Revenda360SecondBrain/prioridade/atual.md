@@ -2,7 +2,7 @@
 
 Atualizado em 2026-08-08.
 
-## Agora (próximo passo) — URGENTE
+## Agora (próximo passo)
 
 **Auditoria técnica completa concluída em 2026-08-08** (segurança, bugs
 funcionais, dependências, qualidade) — ver devtrack
@@ -15,15 +15,23 @@ autorização do Next.js. Também corrigiu um bug financeiro crítico
 baixar parcela já substituída) e vários vazamentos de dado financeiro
 sensível pra role errada.
 
-**Você precisa, nessa ordem, o quanto antes**:
-1. **Rodar `supabase/migrations/0017_auditoria_seguranca_2026-08-08.sql`** —
-   crítico, fecha a auto-escalação de privilégio, que está ativa agora.
-2. **Rotacionar a senha das 3 contas demo** (`demo.gestor@revenda360.app`,
-   `demo.vendedor@revenda360.app`, `demo.financeiro@revenda360.app`) — a
-   senha estava em texto puro num arquivo commitado desde 2026-08-05,
-   removida do arquivo mas ainda no histórico do git.
-3. Rodar `supabase/migrations/0012_fase16_fornecedores.sql` (pendência
-   antiga, não relacionada a esta auditoria).
+**Todas as pendências dessa auditoria foram fechadas na sessão seguinte,
+mesmo dia** — ver devtrack `2026-08-08 - Verificação pós-auditoria,
+rotação de senha demo e reescrita de histórico do git.md`:
+1. ✅ Migration `0017_auditoria_seguranca_2026-08-08.sql` — confirmada
+   aplicada via E2E real contra o Supabase (não só "o Enzo disse que
+   rodou").
+2. ✅ Migration `0012_fase16_fornecedores.sql` — confirmada aplicada, mesma
+   verificação.
+3. ✅ Senha das 3 contas demo rotacionada (repo é público, senha antiga
+   ficou exposta 3 dias — rotação era necessária mesmo sendo conta demo).
+4. ✅ Histórico do git reescrito (`git filter-repo`) removendo a senha
+   antiga de todos os commits, com backup prévio do repo; force-push feito
+   pro `origin/main`.
+
+**Único ponto solto**: avisar o colega que tem clone local do repo — o
+histórico reescrito diverge do clone dele, precisa de `git fetch origin &&
+git reset --hard origin/main` (ou re-clonar) pra sincronizar.
 
 ## Pendência anterior (Tier 1-4 pós-MVP)
 
