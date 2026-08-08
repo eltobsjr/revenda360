@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { EtapaLead } from "@/types/database.types";
 
-function LeadCard({ lead }: { lead: LeadRow }) {
+function LeadCard({ lead, onErro }: { lead: LeadRow; onErro: (mensagem: string) => void }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -30,6 +30,8 @@ function LeadCard({ lead }: { lead: LeadRow }) {
       const resultado = await converterLeadEmVenda(lead.id);
       if (resultado.clienteId) {
         router.push(`/vendas/nova?clienteId=${resultado.clienteId}`);
+      } else {
+        onErro(resultado.error ?? "Não foi possível converter o lead em venda.");
       }
     });
   }
@@ -71,7 +73,15 @@ function LeadCard({ lead }: { lead: LeadRow }) {
   );
 }
 
-function Coluna({ etapa, leads }: { etapa: EtapaLead; leads: LeadRow[] }) {
+function Coluna({
+  etapa,
+  leads,
+  onErro,
+}: {
+  etapa: EtapaLead;
+  leads: LeadRow[];
+  onErro: (mensagem: string) => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
 
   return (
@@ -90,7 +100,7 @@ function Coluna({ etapa, leads }: { etapa: EtapaLead; leads: LeadRow[] }) {
       </div>
       <div className="flex flex-col gap-2">
         {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} />
+          <LeadCard key={lead.id} lead={lead} onErro={onErro} />
         ))}
       </div>
     </div>
@@ -139,7 +149,12 @@ export function LeadsBoard({ leadsIniciais }: { leadsIniciais: LeadRow[] }) {
           <CardContent className="overflow-x-auto">
             <div className="flex gap-3">
               {ETAPAS_LEAD.map((etapa) => (
-                <Coluna key={etapa} etapa={etapa} leads={leads.filter((l) => l.etapa === etapa)} />
+                <Coluna
+                  key={etapa}
+                  etapa={etapa}
+                  leads={leads.filter((l) => l.etapa === etapa)}
+                  onErro={setErro}
+                />
               ))}
             </div>
           </CardContent>
