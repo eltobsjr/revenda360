@@ -14,7 +14,7 @@ export async function marcarComissaoPaga(
   _prevState: MarcarComissaoPagaState,
   formData: FormData,
 ): Promise<MarcarComissaoPagaState> {
-  await requireRole(["gestor"]);
+  const profile = await requireRole(["gestor"]);
 
   const vendaId = String(formData.get("vendaId") ?? "");
   if (!vendaId) return { error: "Venda inválida.", sucesso: false };
@@ -26,6 +26,7 @@ export async function marcarComissaoPaga(
     .from("vendas")
     .update({ comissao_paga: true, comissao_data_pagamento: dataIsoLocal(new Date()) })
     .eq("id", vendaId)
+    .eq("tenant_id", profile.tenantId)
     .eq("comissao_paga", false)
     .select("id");
 

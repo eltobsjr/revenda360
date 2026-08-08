@@ -40,9 +40,13 @@ export async function atualizarEtapaLead(
   leadId: string,
   etapa: EtapaLead,
 ): Promise<{ error: string | null }> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
-  const { error } = await supabase.from("leads").update({ etapa }).eq("id", leadId);
+  const { error } = await supabase
+    .from("leads")
+    .update({ etapa })
+    .eq("id", leadId)
+    .eq("tenant_id", profile.tenantId);
   if (error) return { error: "Não foi possível mover o lead." };
 
   revalidatePath("/vendas/leads");
@@ -63,6 +67,7 @@ export async function converterLeadEmVenda(
     .from("leads")
     .select("id, nome, contato")
     .eq("id", leadId)
+    .eq("tenant_id", profile.tenantId)
     .maybeSingle();
   if (leadError || !lead) return { error: "Lead não encontrado.", clienteId: null };
 
@@ -72,6 +77,7 @@ export async function converterLeadEmVenda(
       .from("clientes")
       .select("id")
       .eq("whatsapp", lead.contato)
+      .eq("tenant_id", profile.tenantId)
       .maybeSingle();
     clienteId = existente?.id ?? null;
   }

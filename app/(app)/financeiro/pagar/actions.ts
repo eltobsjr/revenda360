@@ -51,7 +51,7 @@ export async function darBaixaContaPagar(
   _prevState: ContaPagarState,
   formData: FormData,
 ): Promise<ContaPagarState> {
-  await requireRole(["gestor", "financeiro"]);
+  const profile = await requireRole(["gestor", "financeiro"]);
 
   const parsed = baixaContaPagarSchema.safeParse({
     contaPagarId: String(formData.get("contaPagarId") ?? ""),
@@ -67,6 +67,7 @@ export async function darBaixaContaPagar(
     .from("contas_pagar")
     .select("id, valor, status")
     .eq("id", contaPagarId)
+    .eq("tenant_id", profile.tenantId)
     .maybeSingle();
   if (contaError) {
     return { error: "Não foi possível carregar a conta. " + contaError.message, sucesso: false };
@@ -86,6 +87,7 @@ export async function darBaixaContaPagar(
       forma_pagamento: formaPagamento,
     })
     .eq("id", contaPagarId)
+    .eq("tenant_id", profile.tenantId)
     .neq("status", "Paga")
     .select("id");
   if (updateError) {

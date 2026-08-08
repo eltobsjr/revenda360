@@ -44,7 +44,7 @@ export async function atualizarFornecedor(
   _prevState: FornecedorState,
   formData: FormData,
 ): Promise<FornecedorState> {
-  await requireProfile();
+  const profile = await requireProfile();
   const fornecedorId = String(formData.get("fornecedorId") ?? "");
   if (!fornecedorId) return { error: "Fornecedor inválido.", sucesso: false };
 
@@ -60,7 +60,8 @@ export async function atualizarFornecedor(
       cnpj_cpf: dados.cnpjCpf || null,
       observacoes: dados.observacoes || null,
     })
-    .eq("id", fornecedorId);
+    .eq("id", fornecedorId)
+    .eq("tenant_id", profile.tenantId);
   if (error) return { error: "Não foi possível salvar o fornecedor.", sucesso: false };
 
   revalidatePath("/fornecedores");

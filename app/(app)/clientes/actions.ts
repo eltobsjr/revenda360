@@ -81,7 +81,11 @@ export async function atualizarCliente(
   // esta checagem, salvar como vendedor apagaria o CPF já cadastrado.
   if (profile.role === "gestor") alteracoes.cpf = parsed.data.cpf || null;
 
-  const { error } = await supabase.from("clientes").update(alteracoes).eq("id", clienteId);
+  const { error } = await supabase
+    .from("clientes")
+    .update(alteracoes)
+    .eq("id", clienteId)
+    .eq("tenant_id", profile.tenantId);
 
   if (error) {
     return {

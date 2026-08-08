@@ -49,9 +49,13 @@ export async function atualizarStatusProposta(
   propostaId: string,
   status: StatusProposta,
 ): Promise<{ error: string | null }> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
-  const { error } = await supabase.from("propostas").update({ status }).eq("id", propostaId);
+  const { error } = await supabase
+    .from("propostas")
+    .update({ status })
+    .eq("id", propostaId)
+    .eq("tenant_id", profile.tenantId);
   if (error) return { error: "Não foi possível atualizar a proposta." };
 
   revalidatePath("/vendas/propostas");
@@ -72,6 +76,7 @@ export async function converterPropostaEmVenda(propostaId: string): Promise<{
     .from("propostas")
     .select("id, veiculo_id, cliente_id, cliente_nome_avulso, valor_proposto")
     .eq("id", propostaId)
+    .eq("tenant_id", profile.tenantId)
     .maybeSingle();
   if (propostaError || !proposta) {
     return { error: "Proposta não encontrada.", clienteId: null, veiculoId: null, valorProposto: null };

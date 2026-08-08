@@ -134,7 +134,8 @@ export async function salvarVeiculo(input: {
         ...(parsed.data.fornecedorId ? { fornecedor_id: parsed.data.fornecedorId } : {}),
         atualizado_em: new Date().toISOString(),
       })
-      .eq("id", veiculoId);
+      .eq("id", veiculoId)
+      .eq("tenant_id", profile.tenantId);
     if (error) {
       return { error: `Não foi possível salvar o veículo: ${error.message}`, veiculoId: null };
     }
@@ -185,7 +186,8 @@ export async function salvarVeiculo(input: {
   const { error: delCustosError } = await supabase
     .from("custos_veiculo")
     .delete()
-    .eq("veiculo_id", veiculoId);
+    .eq("veiculo_id", veiculoId)
+    .eq("tenant_id", profile.tenantId);
   if (delCustosError) {
     return {
       error: `Veículo salvo, mas houve falha ao atualizar os custos: ${delCustosError.message}`,
@@ -234,7 +236,8 @@ export async function salvarFotoVeiculo(input: {
     await supabase
       .from("veiculo_fotos")
       .update({ capa: false })
-      .eq("veiculo_id", input.veiculoId);
+      .eq("veiculo_id", input.veiculoId)
+      .eq("tenant_id", profile.tenantId);
   }
 
   const { error } = await supabase.from("veiculo_fotos").insert({
@@ -255,12 +258,16 @@ export async function removerFotoVeiculo(input: {
   storagePath: string;
   veiculoId: string;
 }): Promise<{ error: string | null }> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
 
   await supabase.storage.from("veiculo-fotos").remove([input.storagePath]);
 
-  const { error } = await supabase.from("veiculo_fotos").delete().eq("id", input.fotoId);
+  const { error } = await supabase
+    .from("veiculo_fotos")
+    .delete()
+    .eq("id", input.fotoId)
+    .eq("tenant_id", profile.tenantId);
   if (error) return { error: error.message };
 
   revalidatePath(`/estoque/${input.veiculoId}`);

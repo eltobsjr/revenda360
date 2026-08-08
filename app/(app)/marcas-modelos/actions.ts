@@ -29,7 +29,7 @@ export async function atualizarMarca(
   _prevState: MarcaModeloState,
   formData: FormData,
 ): Promise<MarcaModeloState> {
-  await requireProfile();
+  const profile = await requireProfile();
   const marcaId = String(formData.get("marcaId") ?? "");
   const nome = String(formData.get("nome") ?? "").trim();
   const ativo = formData.get("ativo") === "true";
@@ -37,7 +37,11 @@ export async function atualizarMarca(
   if (!nome) return { error: "Informe o nome da marca.", sucesso: false };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("marcas").update({ nome, ativo }).eq("id", marcaId);
+  const { error } = await supabase
+    .from("marcas")
+    .update({ nome, ativo })
+    .eq("id", marcaId)
+    .eq("tenant_id", profile.tenantId);
   if (error) return { error: "Não foi possível salvar a marca.", sucesso: false };
 
   revalidatePath("/marcas-modelos");
@@ -68,7 +72,7 @@ export async function atualizarModelo(
   _prevState: MarcaModeloState,
   formData: FormData,
 ): Promise<MarcaModeloState> {
-  await requireProfile();
+  const profile = await requireProfile();
   const modeloId = String(formData.get("modeloId") ?? "");
   const nome = String(formData.get("nome") ?? "").trim();
   const ativo = formData.get("ativo") === "true";
@@ -76,7 +80,11 @@ export async function atualizarModelo(
   if (!nome) return { error: "Informe o nome do modelo.", sucesso: false };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("modelos").update({ nome, ativo }).eq("id", modeloId);
+  const { error } = await supabase
+    .from("modelos")
+    .update({ nome, ativo })
+    .eq("id", modeloId)
+    .eq("tenant_id", profile.tenantId);
   if (error) return { error: "Não foi possível salvar o modelo.", sucesso: false };
 
   revalidatePath("/marcas-modelos");
