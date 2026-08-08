@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { atualizarMarca, atualizarModelo } from "@/app/(app)/marcas-modelos/actions";
 import { EditarCatalogoDialog } from "./editar-catalogo-dialog";
 import { NovoModeloDialog } from "./novo-modelo-dialog";
+import { StopSummaryToggle } from "./stop-summary-toggle";
 import type { MarcaComModelos } from "@/lib/data/marcas-modelos";
 
 export function MarcaCard({ marca }: { marca: MarcaComModelos }) {
@@ -22,7 +23,7 @@ export function MarcaCard({ marca }: { marca: MarcaComModelos }) {
                 {marca.modelos.length} modelo{marca.modelos.length === 1 ? "" : "s"}
               </span>
             </span>
-            <span className="flex items-center gap-2" onClick={(e) => e.preventDefault()}>
+            <StopSummaryToggle>
               <EditarCatalogoDialog
                 titulo="Editar marca"
                 idFieldName="marcaId"
@@ -32,7 +33,7 @@ export function MarcaCard({ marca }: { marca: MarcaComModelos }) {
                 action={atualizarMarca}
               />
               <NovoModeloDialog marcaId={marca.id} marcaNome={marca.nome} />
-            </span>
+            </StopSummaryToggle>
           </summary>
           <div className="flex flex-col gap-2 border-t p-4">
             {marca.modelos.length === 0 ? (

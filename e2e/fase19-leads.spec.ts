@@ -20,6 +20,10 @@ async function logar(page: import("@playwright/test").Page, email: string) {
 }
 
 test.describe("Fase 19 — Leads (CRM kanban)", () => {
+  // Viewport largo o bastante pra caber as 6 colunas sem precisar de scroll
+  // horizontal — arrastar via mouse não funciona bem com scroll no meio.
+  test.use({ viewport: { width: 1920, height: 900 } });
+
   let gestorEmail: string;
   let nomeRevenda: string;
   let tenantId: string;
@@ -71,9 +75,26 @@ test.describe("Fase 19 — Leads (CRM kanban)", () => {
     await expect(card).toBeVisible();
 
     const colunaGanho = page.getByRole("list", { name: "Ganho" });
-    await card.dragTo(colunaGanho);
 
-    await expect(page.getByRole("button", { name: "Converter em venda" })).toBeVisible({
+    // dnd-kit exige uma distância mínima de movimento pra ativar o drag (assim
+    // clique em botões dentro do card não dispara um drag por engano) —
+    // Locator.dragTo() faz um único salto de mouse que o sensor não reconhece
+    // como movimento contínuo, então simulamos o arraste manualmente aqui.
+    const origem = await card.boundingBox();
+    const destino = await colunaGanho.boundingBox();
+    if (!origem || !destino) throw new Error("Não foi possível calcular a posição do drag.");
+    await page.mouse.move(origem.x + origem.width / 2, origem.y + origem.height / 2);
+    await page.mouse.down();
+    const passos = 10;
+    for (let i = 1; i <= passos; i++) {
+      await page.mouse.move(
+        origem.x + origem.width / 2 + ((destino.x + destino.width / 2 - origem.x - origem.width / 2) * i) / passos,
+        origem.y + origem.height / 2 + ((destino.y + destino.height / 2 - origem.y - origem.height / 2) * i) / passos,
+      );
+    }
+    await page.mouse.up();
+
+    await expect(page.getByRole("button", { name: "Converter em venda", exact: true })).toBeVisible({
       timeout: 10000,
     });
 
@@ -85,7 +106,7 @@ test.describe("Fase 19 — Leads (CRM kanban)", () => {
       })
       .toBe("Ganho");
 
-    await page.getByRole("button", { name: "Converter em venda" }).click();
+    await page.getByRole("button", { name: "Converter em venda", exact: true }).click();
     await expect(page).toHaveURL(/\/vendas\/nova\?clienteId=/);
 
     await page.getByRole("tab", { name: "Cliente" }).click();

@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
+  PointerSensor,
   useDraggable,
   useDroppable,
+  useSensor,
+  useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { atualizarEtapaLead, converterLeadEmVenda } from "@/app/(app)/vendas/leads/actions";
@@ -96,7 +99,18 @@ function Coluna({ etapa, leads }: { etapa: EtapaLead; leads: LeadRow[] }) {
 
 export function LeadsBoard({ leadsIniciais }: { leadsIniciais: LeadRow[] }) {
   const [leads, setLeads] = useState(leadsIniciais);
+  const [leadsIniciaisAnterior, setLeadsIniciaisAnterior] = useState(leadsIniciais);
   const [erro, setErro] = useState<string | null>(null);
+
+  if (leadsIniciais !== leadsIniciaisAnterior) {
+    setLeadsIniciaisAnterior(leadsIniciais);
+    setLeads(leadsIniciais);
+  }
+
+  // Distância mínima antes de ativar o drag: sem isso, o listener de pointer
+  // do card inteiro captura até cliques no botão "Converter em venda" lá
+  // dentro, e o clique nunca chega no botão.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -120,7 +134,7 @@ export function LeadsBoard({ leadsIniciais }: { leadsIniciais: LeadRow[] }) {
   return (
     <div className="flex flex-col gap-3">
       {erro ? <p className="text-sm text-destructive">{erro}</p> : null}
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <Card>
           <CardContent className="overflow-x-auto">
             <div className="flex gap-3">
