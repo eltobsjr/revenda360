@@ -10,11 +10,17 @@ Revenda de demonstração ("Revenda Demo"), já com estoque, clientes e vendas d
 exemplo (uma à vista, uma em crediário com parcela paga/atrasada/a vencer, pra
 já nascer com dado real pra olhar). Login em `/login`:
 
-| Papel | E-mail | Senha |
-|---|---|---|
-| Gestor (vê tudo, inclusive financeiro) | `demo.gestor@revenda360.app` | `***SENHA-REMOVIDA-DO-HISTORICO***` |
-| Vendedor (sem dado financeiro sensível) | `demo.vendedor@revenda360.app` | `***SENHA-REMOVIDA-DO-HISTORICO***` |
-| Financeiro | `demo.financeiro@revenda360.app` | `***SENHA-REMOVIDA-DO-HISTORICO***` |
+| Papel | E-mail |
+|---|---|
+| Gestor (vê tudo, inclusive financeiro) | `demo.gestor@revenda360.app` |
+| Vendedor (sem dado financeiro sensível) | `demo.vendedor@revenda360.app` |
+| Financeiro | `demo.financeiro@revenda360.app` |
+
+**A senha não fica neste arquivo** (achado de auditoria de 2026-08-08: a
+senha em texto puro estava commitada aqui, num repositório público — foi
+removida e as contas precisam ter a senha rotacionada). Peça a senha atual
+por um canal fora do git, ou gere um link de "definir senha" novo pra cada
+conta demo pelo painel `/equipe` ou script local.
 
 Se quiser resetar os dados de demonstração pro estado inicial (ex.: antes de
 uma apresentação), rode `node scripts/local-seed-demo-tenant.mjs` — apaga e
