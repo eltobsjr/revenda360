@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -7,6 +6,13 @@ import { buttonVariants } from "@/components/ui/button";
  * de fato consome o token de recovery de uso único — ver `gerarLinkDefinirSenha`
  * pra o porquê: apps de mensagens buscam a URL sozinhos pra gerar prévia, e
  * essa página não toca no Supabase, só repassa os parâmetros no clique.
+ *
+ * O botão abaixo usa `<a>` puro, não `next/link`: o `<Link>` do Next faz
+ * prefetch automático do href assim que ele entra na viewport, e como
+ * `/auth/confirm` é um Route Handler que consome o token só de receber um
+ * GET, o prefetch sozinho já gastava o token antes do clique de verdade —
+ * exatamente o mesmo bug da prévia do WhatsApp, só que causado pelo próprio
+ * Next.js dessa vez. `<a>` puro nunca é prefetchado pelo navegador.
  */
 export default async function ConfirmarPage({
   searchParams,
@@ -43,9 +49,9 @@ export default async function ConfirmarPage({
       <p className="mb-6 text-sm text-muted-foreground">
         Clique no botão abaixo pra continuar e definir sua senha.
       </p>
-      <Link href={`/auth/confirm?${params.toString()}`} className={buttonVariants({ className: "w-full" })}>
+      <a href={`/auth/confirm?${params.toString()}`} className={buttonVariants({ className: "w-full" })}>
         Continuar
-      </Link>
+      </a>
     </AuthSplitLayout>
   );
 }
