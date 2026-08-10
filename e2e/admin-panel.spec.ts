@@ -99,6 +99,45 @@ test.describe("Painel administrativo do dono da plataforma", () => {
     });
   });
 
+  test("dono da plataforma exclui uma revenda, só depois de digitar o nome exato pra confirmar", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await page.getByLabel("E-mail").fill(adminEmail);
+    await page.getByLabel("Senha").fill(SENHA);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page).toHaveURL(/\/admin/);
+
+    const linha = page.getByRole("row", { name: new RegExp(nomeRevendaExistente) });
+    await linha.getByRole("button", { name: "Excluir" }).click();
+
+    const dialog = page.getByRole("dialog");
+    const botaoConfirmar = dialog.getByRole("button", { name: "Excluir revenda definitivamente" });
+
+    // Nome errado: botão continua desabilitado, nada é apagado.
+    await dialog.getByLabel(`Digite "${nomeRevendaExistente}" para confirmar`).fill("nome errado");
+    await expect(botaoConfirmar).toBeDisabled();
+
+    await dialog.getByLabel(`Digite "${nomeRevendaExistente}" para confirmar`).fill(nomeRevendaExistente);
+    await expect(botaoConfirmar).toBeEnabled();
+    await botaoConfirmar.click();
+
+    // O diálogo só fecha em caso de sucesso (fica aberto com erro senão) —
+    // checar isso primeiro dá um sinal de falha bem mais claro do que ir
+    // direto pra "a linha sumiu", que também dá falso positivo enquanto o
+    // diálogo aberto deixa o fundo da página inert/oculto da árvore de
+    // acessibilidade.
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByRole("row", { name: new RegExp(nomeRevendaExistente) })).toHaveCount(0);
+
+    const admin = createTestAdminClient();
+    const { data: tenant } = await admin.from("tenants").select("id").eq("nome", nomeRevendaExistente).maybeSingle();
+    expect(tenant).toBeNull();
+
+    const { data: authUsers } = await admin.auth.admin.listUsers();
+    expect(authUsers.users.some((u) => u.email === gestorEmail)).toBe(false);
+  });
+
   test("usuário de tenant normal não acessa o painel administrativo", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("E-mail").fill(gestorEmail);

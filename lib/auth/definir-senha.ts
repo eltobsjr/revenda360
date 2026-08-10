@@ -10,6 +10,14 @@ import type { Database } from "@/types/database.types";
  * depender de envio de e-mail (o projeto não tem SMTP configurado). Quem cria
  * o usuário copia este link e manda manualmente (WhatsApp etc.) — mesmo canal
  * já usado hoje pra senha temporária.
+ *
+ * Aponta pra `/auth/confirmar` (interstitial, exige clique) em vez de
+ * `/auth/confirm` (que já consome o token na hora) — apps de mensagens como
+ * o WhatsApp buscam a URL sozinhos pra gerar a prévia do link assim que ele
+ * é colado na conversa, o que consumia o token de uso único antes da pessoa
+ * sequer clicar. Resultado: "link expirado" mesmo nunca tendo sido usado de
+ * verdade. `/auth/confirmar` não toca no Supabase — só exibe um botão que
+ * leva pra `/auth/confirm`, que aí sim verifica o token, só no clique real.
  */
 export async function gerarLinkDefinirSenha(
   admin: SupabaseClient<Database>,
@@ -22,5 +30,5 @@ export async function gerarLinkDefinirSenha(
   if (error || !data) return null;
 
   const siteUrl = await getSiteUrl();
-  return `${siteUrl}/auth/confirm?token_hash=${data.properties.hashed_token}&type=recovery&next=/definir-senha`;
+  return `${siteUrl}/auth/confirmar?token_hash=${data.properties.hashed_token}&type=recovery&next=/definir-senha`;
 }

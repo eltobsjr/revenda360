@@ -28,7 +28,10 @@ export async function updateSession(request: NextRequest) {
   // quem está no link — precisa rodar mesmo se o navegador já tiver uma
   // sessão de outra conta (ex.: o gestor testando o link que acabou de
   // gerar), senão o redirect de "já autenticado" abaixo intercepta antes do
-  // handler trocar a sessão.
+  // handler trocar a sessão. `startsWith` também cobre `/auth/confirmar` (o
+  // interstitial antes dele, ver gerarLinkDefinirSenha) de propósito: quem
+  // ainda não logou precisa conseguir abrir essa página sem ser jogado pro
+  // /login por "não autenticado".
   if (request.nextUrl.pathname.startsWith("/auth/confirm")) {
     return response;
   }

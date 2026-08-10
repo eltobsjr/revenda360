@@ -91,12 +91,17 @@ test.describe("Fase 0 — login, equipe, tema (tenant provisionado como o painel
     await page.getByRole("button", { name: "Adicionar à equipe" }).click();
 
     const link = await page.getByLabel("Link para definir senha").inputValue();
-    expect(link).toContain("/auth/confirm");
+    expect(link).toContain("/auth/confirmar");
 
     await page.getByRole("button", { name: "Sair" }).click();
     await expect(page).toHaveURL(/\/login/);
 
+    // O link cai num interstitial antes de consumir o token — evita que uma
+    // prévia automática de app de mensagens (WhatsApp etc.) gaste o token de
+    // uso único antes da pessoa clicar de verdade.
     await page.goto(link);
+    await expect(page).toHaveURL(/\/auth\/confirmar/);
+    await page.getByRole("link", { name: "Continuar" }).click();
     await expect(page).toHaveURL(/\/definir-senha/);
     await page.getByLabel("Nova senha").fill(senhaEscolhida);
     await page.getByLabel("Confirmar senha").fill(senhaEscolhida);

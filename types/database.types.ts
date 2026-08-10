@@ -770,6 +770,12 @@ export type Database = {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      excluir_revenda: {
+        Args: {
+          p_tenant_id: string;
+        };
+        Returns: undefined;
+      };
       criar_membro_equipe: {
         Args: {
           p_user_id: string;

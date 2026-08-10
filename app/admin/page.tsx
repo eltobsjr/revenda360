@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { listTenants } from "@/lib/data/admin";
 import { buttonVariants } from "@/components/ui/button";
+import { ExcluirRevendaDialog } from "@/components/features/admin/excluir-revenda-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -39,6 +40,7 @@ export default async function AdminPage() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Plano</TableHead>
                 <TableHead>Criada em</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -48,6 +50,9 @@ export default async function AdminPage() {
                   <TableCell className="text-muted-foreground">{t.plano}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(t.criado_em).toLocaleDateString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ExcluirRevendaDialog tenantId={t.id} nomeRevenda={t.nome} />
                   </TableCell>
                 </TableRow>
               ))}
