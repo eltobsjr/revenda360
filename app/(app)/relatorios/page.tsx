@@ -5,9 +5,11 @@ import {
   resumoEstoquePorStatus,
   resumoParcelasPorStatus,
   resumoContasPagar,
+  listContratosParaRelatorio,
 } from "@/lib/data/relatorios";
 import { formatBRL, formatInt } from "@/lib/format";
 import { RelatoriosTabs } from "@/components/features/relatorios/relatorios-tabs";
+import { BaixarPdfVendasButton } from "@/components/features/relatorios/baixar-pdf-vendas-button";
 import { KpiCard } from "@/components/features/dashboard/kpi-card";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -30,10 +32,12 @@ export default async function RelatoriosPage({
   const { aba: abaParam } = await searchParams;
   const profile = await getCurrentProfile();
   const role = profile?.role ?? "vendedor";
-  const podeVerPagar = role !== "vendedor";
+
+  // Relatórios expõe dado financeiro agregado (estoque, crediário, contas a
+  // pagar) — só gestor e financeiro têm acesso, vendedor nem chega na tela.
+  if (role !== "gestor" && role !== "financeiro") redirect("/dashboard");
 
   const aba: Aba = abaParam === "vendas" || abaParam === "pagar" ? abaParam : "estoque";
-  if (aba === "pagar" && !podeVerPagar) redirect("/relatorios?aba=estoque");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -44,7 +48,7 @@ export default async function RelatoriosPage({
         </p>
       </div>
 
-      <RelatoriosTabs abaAtiva={aba} mostrarPagar={podeVerPagar} />
+      <RelatoriosTabs abaAtiva={aba} />
 
       {aba === "estoque" ? <AbaEstoque role={role} /> : null}
       {aba === "vendas" ? <AbaVendas /> : null}
@@ -141,7 +145,7 @@ const TONE_POR_STATUS: Record<string, Kpi["tone"]> = {
 };
 
 async function AbaVendas() {
-  const linhas = await resumoParcelasPorStatus();
+  const [linhas, contratos] = await Promise.all([resumoParcelasPorStatus(), listContratosParaRelatorio()]);
   const kpis: Kpi[] = linhas
     .filter((l) => l.status !== "Renegociada")
     .map((l) => ({
@@ -192,7 +196,10 @@ async function AbaVendas() {
         </>
       )}
 
-      <LinkDetalhado href="/financeiro/receber" texto="Ver detalhado em Contas a receber" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <LinkDetalhado href="/financeiro/receber" texto="Ver detalhado em Contas a receber" />
+        <BaixarPdfVendasButton linhas={contratos} />
+      </div>
     </div>
   );
 }

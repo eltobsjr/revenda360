@@ -7,18 +7,10 @@ const ABAS = [
   { id: "pagar", label: "Contas a pagar" },
 ] as const;
 
-export function RelatoriosTabs({
-  abaAtiva,
-  mostrarPagar,
-}: {
-  abaAtiva: string;
-  mostrarPagar: boolean;
-}) {
-  const abas = mostrarPagar ? ABAS : ABAS.filter((a) => a.id !== "pagar");
-
+export function RelatoriosTabs({ abaAtiva }: { abaAtiva: string }) {
   return (
     <nav aria-label="Relatórios" className="flex overflow-hidden rounded-md border border-border w-fit">
-      {abas.map((a) => (
+      {ABAS.map((a) => (
         <Link
           key={a.id}
           href={`/relatorios?aba=${a.id}`}

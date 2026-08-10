@@ -103,14 +103,22 @@ test.describe("Fase 22 — Relatórios", () => {
     await expect(page.getByText("Nenhuma conta a pagar registrada.")).toBeVisible();
   });
 
-  test("vendedor não vê a aba Contas a pagar e é redirecionado se acessar direto", async ({ page }) => {
+  test("vendedor não acessa Relatórios (redirecionado pro Dashboard)", async ({ page }) => {
     await logar(page, vendedorEmail);
     await page.goto("/relatorios");
-    await expect(
-      page.getByRole("navigation", { name: "Relatórios" }).getByRole("link", { name: "Contas a pagar" }),
-    ).toHaveCount(0);
+    await expect(page).toHaveURL(/\/dashboard/);
 
-    await page.goto("/relatorios?aba=pagar");
-    await expect(page).toHaveURL(/aba=estoque/);
+    await page.goto("/relatorios?aba=vendas");
+    await expect(page).toHaveURL(/\/dashboard/);
+  });
+
+  test("gestor baixa o PDF de Vendas & Recebíveis", async ({ page }) => {
+    await logar(page, gestorEmail);
+    await page.goto("/relatorios?aba=vendas");
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Baixar PDF" }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toContain(".pdf");
   });
 });
