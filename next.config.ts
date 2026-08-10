@@ -7,7 +7,12 @@ const CSP = [
   // antes da hidratação) e o Next injeta estilo inline em dev/build — sem
   // nonce por enquanto, então precisa de 'unsafe-inline'. 'unsafe-eval' só em
   // dev — o React dev mode usa eval() pra debugging, mas nunca em produção.
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`,
+  // 'wasm-unsafe-eval' fica em todo ambiente (não é coberto por 'unsafe-eval'
+  // em todo browser, e é bem mais restrito: só permite compilar WebAssembly,
+  // não executar string como código) — @react-pdf/renderer (Propostas,
+  // Relatórios) usa um módulo WASM internamente pra gerar o PDF no navegador
+  // e falha silenciosamente sem isso.
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
