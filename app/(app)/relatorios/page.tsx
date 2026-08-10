@@ -5,8 +5,8 @@ import {
   resumoEstoquePorStatus,
   resumoParcelasPorStatus,
   resumoContasPagar,
-  listContratosParaRelatorio,
 } from "@/lib/data/relatorios";
+import { listParcelas } from "@/lib/data/contas-receber";
 import { listContasPagar } from "@/lib/data/contas-pagar";
 import { formatBRL, formatInt } from "@/lib/format";
 import { RelatoriosTabs } from "@/components/features/relatorios/relatorios-tabs";
@@ -146,9 +146,9 @@ const TONE_POR_STATUS: Record<string, Kpi["tone"]> = {
 };
 
 async function AbaVendas({ role }: { role: "gestor" | "vendedor" | "financeiro" }) {
-  const [linhas, contratos, contasPagar] = await Promise.all([
+  const [linhas, parcelas, contasPagar] = await Promise.all([
     resumoParcelasPorStatus(),
-    listContratosParaRelatorio(),
+    listParcelas(),
     listContasPagar(role),
   ]);
   const kpis: Kpi[] = linhas
@@ -203,7 +203,7 @@ async function AbaVendas({ role }: { role: "gestor" | "vendedor" | "financeiro" 
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <LinkDetalhado href="/financeiro/receber" texto="Ver detalhado em Contas a receber" />
-        <BaixarPdfVendasButton linhas={contratos} contasPagar={contasPagar} />
+        <BaixarPdfVendasButton parcelas={parcelas} contasPagar={contasPagar} />
       </div>
     </div>
   );

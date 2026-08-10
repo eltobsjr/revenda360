@@ -112,29 +112,51 @@ test.describe("Fase 22 — Relatórios", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test("gestor escolhe o tipo de relatório e baixa o PDF correspondente", async ({ page }) => {
+  /** Mesma fórmula de `limitesDoMes` em baixar-pdf-vendas-button.tsx. */
+  function limitesDoMesAtual(): { inicio: string; fim: string } {
+    const hoje = new Date();
+    const mesIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+    const inicio = `${mesIso}-01`;
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().slice(0, 10);
+    return { inicio, fim };
+  }
+
+  test("gestor escolhe período e tipo de relatório, e baixa o PDF correspondente", async ({ page }) => {
     await logar(page, gestorEmail);
     await page.goto("/relatorios?aba=vendas");
+    const { inicio, fim } = limitesDoMesAtual();
 
     await page.getByRole("button", { name: "Baixar PDF" }).click();
     const dialogGeral = page.getByRole("dialog");
     await expect(dialogGeral.getByRole("heading", { name: "Baixar PDF" })).toBeVisible();
 
+    // Padrão: modo "Mensal" com o mês atual pré-selecionado.
+    await expect(dialogGeral.getByLabel("Mês")).toHaveValue(inicio.slice(0, 7));
+
     const downloadGeral = page.waitForEvent("download");
-    await dialogGeral.getByRole("button", { name: "Relatório geral (todos os contratos)" }).click();
-    expect((await downloadGeral).suggestedFilename()).toBe(
-      `vendas-recebiveis-${new Date().toISOString().slice(0, 10)}.pdf`,
+    await dialogGeral.getByRole("button", { name: "Relatório geral (todos os status)" }).click();
+    expect((await downloadGeral).suggestedFilename()).toBe(`vendas-recebiveis-${inicio}-a-${fim}.pdf`);
+
+    // Reabre o diálogo, troca pra período personalizado e escolhe "A receber
+    // — a vencer" — deve baixar um arquivo com o período customizado no nome.
+    await page.getByRole("button", { name: "Baixar PDF" }).click();
+    const dialogPersonalizado = page.getByRole("dialog");
+    await dialogPersonalizado.getByRole("button", { name: "Data inicial a final" }).click();
+    await dialogPersonalizado.getByLabel("De").fill("2026-01-01");
+    await dialogPersonalizado.getByLabel("Até").fill("2026-12-31");
+
+    const downloadAVencer = page.waitForEvent("download");
+    await dialogPersonalizado.getByRole("button", { name: "A receber — a vencer" }).click();
+    expect((await downloadAVencer).suggestedFilename()).toBe(
+      "a-receber-a-vencer-2026-01-01-a-2026-12-31.pdf",
     );
 
-    // Reabre o diálogo e escolhe "Somente contas a pagar" — deve baixar um
-    // arquivo diferente do relatório geral, confirmando que a opção certa
-    // foi respeitada, não só o botão "Baixar PDF" clicado de novo.
+    // Somente contas a pagar, ainda no período personalizado — arquivo
+    // diferente, confirmando que a opção certa foi respeitada.
     await page.getByRole("button", { name: "Baixar PDF" }).click();
     const dialogPagar = page.getByRole("dialog");
     const downloadPagar = page.waitForEvent("download");
     await dialogPagar.getByRole("button", { name: "Somente contas a pagar" }).click();
-    expect((await downloadPagar).suggestedFilename()).toBe(
-      `contas-a-pagar-${new Date().toISOString().slice(0, 10)}.pdf`,
-    );
+    expect((await downloadPagar).suggestedFilename()).toBe("contas-a-pagar-2026-01-01-a-2026-12-31.pdf");
   });
 });

@@ -1,5 +1,5 @@
 import { listVeiculos } from "@/lib/data/veiculos";
-import { listParcelas, listContratos } from "@/lib/data/contas-receber";
+import { listParcelas } from "@/lib/data/contas-receber";
 import { listContasPagar } from "@/lib/data/contas-pagar";
 import type { StatusParcela } from "@/lib/domain/juros";
 import type { StatusVeiculo, UserRole } from "@/types/database.types";
@@ -80,51 +80,6 @@ export async function resumoParcelasPorStatus(): Promise<ResumoParcelasLinha[]> 
   }
 
   return [...porStatus.values()].sort((a, b) => b.valor - a.valor);
-}
-
-export type ContratoRelatorioLinha = {
-  contratoId: string;
-  cliente: string;
-  veiculo: string;
-  /** Null quando o contrato não tem parcela pendente (situação = "Paga"). */
-  proximaParcela: { valor: number; vencimento: string; status: StatusParcela } | null;
-  /** Só relevante quando > 1 — sinaliza que a próxima parcela não é a única em atraso. */
-  qtdAtrasadas: number;
-};
-
-/**
- * Uma linha por contrato (cliente + veículo), com a próxima parcela pendente
- * e quantas estão em atraso — base do PDF de "Vendas & Recebíveis". Reaproveita
- * `listContratos`/`listParcelas` já existentes; o agrupamento por contrato é o
- * mesmo critério usado em `ContratoCard` (Contas a receber → Por contrato).
- */
-export async function listContratosParaRelatorio(): Promise<ContratoRelatorioLinha[]> {
-  const [contratos, parcelas] = await Promise.all([listContratos(), listParcelas()]);
-
-  const pendentesPorContrato = new Map<string, typeof parcelas>();
-  for (const p of parcelas) {
-    if (p.status === "Paga") continue;
-    const lista = pendentesPorContrato.get(p.contratoId) ?? [];
-    lista.push(p);
-    pendentesPorContrato.set(p.contratoId, lista);
-  }
-  for (const lista of pendentesPorContrato.values()) {
-    lista.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
-  }
-
-  return contratos.map((ct) => {
-    const pendentes = pendentesPorContrato.get(ct.id) ?? [];
-    const proxima = pendentes[0] ?? null;
-    return {
-      contratoId: ct.id,
-      cliente: ct.cliente,
-      veiculo: ct.veiculo,
-      proximaParcela: proxima
-        ? { valor: proxima.valor, vencimento: proxima.vencimento, status: proxima.status }
-        : null,
-      qtdAtrasadas: pendentes.filter((p) => p.status === "Atrasada").length,
-    };
-  });
 }
 
 export type ResumoContasPagar = {

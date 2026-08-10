@@ -42,7 +42,13 @@ const SITUACAO_ORDEM: Record<string, number> = {
   Renegociada: 2,
 };
 
-export function ContasPagarPdf({ contas }: { contas: ContaPagarRow[] }) {
+export function ContasPagarPdf({
+  contas,
+  periodo,
+}: {
+  contas: ContaPagarRow[];
+  periodo: { inicio: string; fim: string };
+}) {
   const ordenadas = [...contas].sort((a, b) => {
     const ordemA = SITUACAO_ORDEM[a.status] ?? 2;
     const ordemB = SITUACAO_ORDEM[b.status] ?? 2;
@@ -54,7 +60,10 @@ export function ContasPagarPdf({ contas }: { contas: ContaPagarRow[] }) {
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.title}>Contas a pagar</Text>
-        <Text style={styles.subtitle}>Gerado em {formatDataBR(new Date())}</Text>
+        <Text style={styles.subtitle}>
+          Período: {formatDataBR(periodo.inicio)} a {formatDataBR(periodo.fim)} — Gerado em{" "}
+          {formatDataBR(new Date())}
+        </Text>
 
         <View style={styles.headerRow}>
           <Text style={[styles.headerCell, styles.colDescricao]}>Descrição</Text>
@@ -81,7 +90,7 @@ export function ContasPagarPdf({ contas }: { contas: ContaPagarRow[] }) {
         ))}
 
         {ordenadas.length === 0 ? (
-          <Text style={styles.vazio}>Nenhuma conta a pagar registrada.</Text>
+          <Text style={styles.vazio}>Nenhuma conta a pagar encontrada nesse período.</Text>
         ) : null}
       </Page>
     </Document>
