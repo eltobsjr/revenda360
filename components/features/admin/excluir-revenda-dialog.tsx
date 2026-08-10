@@ -42,7 +42,6 @@ export function ExcluirRevendaDialog({ tenantId, nomeRevenda }: { tenantId: stri
         </DialogHeader>
         <form action={formAction} className="flex flex-col gap-4">
           <input type="hidden" name="tenantId" value={tenantId} />
-          <input type="hidden" name="nomeRevenda" value={nomeRevenda} />
           <p className="text-sm text-muted-foreground">
             Isso apaga <strong className="text-foreground">{nomeRevenda}</strong> por completo — estoque,
             vendas, clientes, financeiro, equipe, tudo. Não tem como desfazer. Pra confirmar, digite o nome

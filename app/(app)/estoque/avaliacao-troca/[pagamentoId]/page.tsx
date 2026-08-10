@@ -12,14 +12,14 @@ export default async function CompletarTrocaPage({
   params: Promise<{ pagamentoId: string }>;
 }) {
   const { pagamentoId } = await params;
-  const [troca, profile, lojas] = await Promise.all([
-    getTrocaPendente(pagamentoId),
-    getCurrentProfile(),
-    listLojas(),
-  ]);
+  const profile = await getCurrentProfile();
+  const role = profile?.role ?? "vendedor";
+  const [troca, lojas] = await Promise.all([getTrocaPendente(pagamentoId, role), listLojas()]);
   if (!troca) notFound();
 
-  const role = profile?.role ?? "vendedor";
+  // troca.valor só vem preenchido pra role "gestor" (regra suprema do
+  // CLAUDE.md: valor de compra é sempre sensível, sem exceção mesmo aqui,
+  // onde antes vazava tanto no texto quanto no pré-preenchimento do campo).
   const estadoInicial = {
     ...estadoInicialVeiculoForm("carro"),
     origem: "Troca" as const,
@@ -32,9 +32,13 @@ export default async function CompletarTrocaPage({
       <div>
         <h1 className="font-heading text-xl font-semibold">Completar cadastro do veículo</h1>
         <p className="text-sm text-muted-foreground">
-          Recebido na troca ({formatBRL(troca.valor)}) — venda de {troca.veiculoVendido} para{" "}
-          {troca.cliente}. Confira/ajuste o tipo, complete a identificação e o restante dos dados
-          antes de cadastrar no estoque.
+          Recebido na troca
+          {troca.valor !== null ? ` (${formatBRL(troca.valor)})` : ""} — venda de{" "}
+          {troca.veiculoVendido} para {troca.cliente}. Confira/ajuste o tipo, complete a
+          identificação e o restante dos dados antes de cadastrar no estoque.
+          {troca.valor === null ? (
+            <> O valor de compra precisa ser preenchido por um gestor.</>
+          ) : null}
         </p>
       </div>
       <VeiculoForm

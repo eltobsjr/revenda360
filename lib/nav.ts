@@ -19,6 +19,7 @@ import {
   Tag,
   FileBarChart,
   Settings,
+  User,
   type LucideIcon,
 } from "lucide-react";
 
@@ -72,10 +73,16 @@ export const NAV: NavGroup[] = [
   },
 ];
 
-/** Atalhos de acesso rápido na barra inferior (mobile). */
+/**
+ * Atalhos de acesso rápido na barra inferior (mobile). "Perfil" mora aqui
+ * (não no cabeçalho) porque o cabeçalho já é apertado em 375px — auditoria
+ * de responsividade de 2026-08-10 encontrou o link de perfil no header
+ * espremendo o campo de busca a ~60px de largura útil.
+ */
 export const MOBILE_QUICK_NAV: NavItem[] = [
   { label: "Início", href: "/dashboard", icon: LayoutDashboard },
   { label: "Estoque", href: "/estoque", icon: Car },
   { label: "Vender", href: "/vendas/nova", icon: ShoppingCart },
   { label: "Receber", href: "/financeiro/receber", icon: Wallet },
+  { label: "Perfil", href: "/perfil", icon: User },
 ];

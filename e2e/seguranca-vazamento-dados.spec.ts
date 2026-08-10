@@ -22,6 +22,7 @@ async function logar(page: import("@playwright/test").Page, email: string) {
 test.describe("Segurança — vazamento de custo de aquisição em Avaliação/Troca (achado crítico da auditoria de 2026-08-08)", () => {
   let vendedorEmail: string;
   let nomeRevenda: string;
+  let pagamentoId: string;
 
   test.beforeEach(async () => {
     vendedorEmail = uniqueEmail("vazamento-vendedor");
@@ -67,13 +68,18 @@ test.describe("Segurança — vazamento de custo de aquisição em Avaliação/T
     // Pagamento tipo "troca" — o valor aqui é exatamente o custo de
     // aquisição do veículo recebido, que o achado crítico expunha a
     // qualquer role em /estoque/avaliacao-troca.
-    await admin.from("venda_pagamentos").insert({
-      tenant_id: tenantId,
-      venda_id: venda!.id,
-      tipo: "troca",
-      valor: 27500,
-      detalhes: { descricao: "Honda Pop 110i 2018" },
-    });
+    const { data: pagamento } = await admin
+      .from("venda_pagamentos")
+      .insert({
+        tenant_id: tenantId,
+        venda_id: venda!.id,
+        tipo: "troca",
+        valor: 27500,
+        detalhes: { descricao: "Honda Pop 110i 2018" },
+      })
+      .select("id")
+      .single();
+    pagamentoId = pagamento!.id;
   });
 
   test.afterEach(async () => {
@@ -87,5 +93,23 @@ test.describe("Segurança — vazamento de custo de aquisição em Avaliação/T
 
     await expect(page.getByText("Honda Pop 110i 2018")).toBeVisible();
     await expect(page.getByText("R$ 27.500,00")).toHaveCount(0);
+  });
+
+  // Achado da auditoria de 2026-08-10: a tela de listagem já filtrava, mas
+  // /estoque/avaliacao-troca/[pagamentoId] (completar cadastro) chamava
+  // getTrocaPendente() sem role e vazava o valor tanto no texto quanto no
+  // pré-preenchimento do campo "Valor de compra".
+  test("vendedor não vê o valor da troca pendente em /estoque/avaliacao-troca/[pagamentoId]", async ({
+    page,
+  }) => {
+    await logar(page, vendedorEmail);
+    await page.goto(`/estoque/avaliacao-troca/${pagamentoId}`);
+
+    await expect(page.getByText(/venda de Fiat Argo para Cliente Troca E2E/)).toBeVisible();
+    await expect(page.getByText("R$ 27.500,00")).toHaveCount(0);
+    await expect(page.getByText("O valor de compra precisa ser preenchido por um gestor.")).toBeVisible();
+
+    await page.getByRole("tab", { name: "Aquisição" }).click();
+    await expect(page.getByLabel("Valor de compra")).toHaveValue("0");
   });
 });

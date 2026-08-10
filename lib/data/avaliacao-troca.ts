@@ -14,12 +14,14 @@ export type TrocaPendente = {
  * Pagamentos tipo "troca" (Fase 4, Nova venda) que ainda não viraram um
  * veículo no estoque — nenhum `veiculos.origem_troca_pagamento_id` aponta
  * pra eles ainda. `valor` (custo de aquisição do veículo recebido) só vai
- * pra quem tem role "gestor" — use `role` sempre que o retorno for pra uma
- * tela de listagem/relatório. `getTrocaPendente` não filtra: é usada só
- * pra pré-preencher o formulário de cadastro, onde "Valor de compra" já é
- * um campo aberto pra qualquer role (quem cadastra o veículo sabe o valor).
+ * pra quem tem role "gestor" (regra suprema do CLAUDE.md: valor de compra é
+ * sempre sensível). `role` é obrigatório — achado da auditoria de
+ * 2026-08-10: `getTrocaPendente` chamava isto sem `role` (parâmetro
+ * opcional, sem esse argumento a checagem `role &amp;&amp; role !== "gestor"`
+ * dava falso e devolvia o valor bruto), vazando o valor em texto puro na
+ * tela de completar cadastro pra qualquer papel.
  */
-export async function listTrocasPendentes(role?: UserRole): Promise<TrocaPendente[]> {
+export async function listTrocasPendentes(role: UserRole): Promise<TrocaPendente[]> {
   const supabase = await createClient();
 
   const { data: pagamentos, error } = await supabase
@@ -77,7 +79,7 @@ export async function listTrocasPendentes(role?: UserRole): Promise<TrocaPendent
       return {
         pagamentoId: p.id,
         descricao: detalhes?.descricao || "Veículo recebido na troca",
-        valor: role && role !== "gestor" ? null : p.valor,
+        valor: role !== "gestor" ? null : p.valor,
         dataVenda: venda?.data_venda ?? "",
         veiculoVendido: venda ? (veiculoPorId.get(venda.veiculo_id) ?? "Veículo") : "Veículo",
         cliente: venda
@@ -91,7 +93,7 @@ export async function listTrocasPendentes(role?: UserRole): Promise<TrocaPendent
 }
 
 /** Uma troca pendente específica, para preencher o formulário de completar cadastro. */
-export async function getTrocaPendente(pagamentoId: string): Promise<TrocaPendente | null> {
-  const pendentes = await listTrocasPendentes();
+export async function getTrocaPendente(pagamentoId: string, role: UserRole): Promise<TrocaPendente | null> {
+  const pendentes = await listTrocasPendentes(role);
   return pendentes.find((p) => p.pagamentoId === pagamentoId) ?? null;
 }

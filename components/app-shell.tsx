@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandSwitcher } from "@/components/brand-switcher";
+import { AvatarIniciais } from "@/components/features/perfil/avatar-iniciais";
 import { NAV, MOBILE_QUICK_NAV } from "@/lib/nav";
 import { logout } from "@/app/(auth)/actions";
 
@@ -100,14 +101,18 @@ export function AppShell({
           <BrandSwitcher />
           <ThemeToggle />
 
-          <div className="hidden items-center gap-2 sm:flex">
+          <Link
+            href="/perfil"
+            className="hidden items-center gap-2 rounded-md p-1 sm:flex hover:bg-muted"
+          >
             <div className="text-right leading-tight">
               <p className="text-sm font-medium">{nome}</p>
               <p className="text-xs text-muted-foreground">
                 {ROLE_LABEL[role] ?? role}
               </p>
             </div>
-          </div>
+            <AvatarIniciais nome={nome} size="sm" />
+          </Link>
 
           <form action={logout}>
             <Button type="submit" variant="outline" size="sm">
