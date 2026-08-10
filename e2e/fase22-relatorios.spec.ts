@@ -112,13 +112,29 @@ test.describe("Fase 22 — Relatórios", () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test("gestor baixa o PDF de Vendas & Recebíveis", async ({ page }) => {
+  test("gestor escolhe o tipo de relatório e baixa o PDF correspondente", async ({ page }) => {
     await logar(page, gestorEmail);
     await page.goto("/relatorios?aba=vendas");
 
-    const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Baixar PDF" }).click();
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toContain(".pdf");
+    const dialogGeral = page.getByRole("dialog");
+    await expect(dialogGeral.getByRole("heading", { name: "Baixar PDF" })).toBeVisible();
+
+    const downloadGeral = page.waitForEvent("download");
+    await dialogGeral.getByRole("button", { name: "Relatório geral (todos os contratos)" }).click();
+    expect((await downloadGeral).suggestedFilename()).toBe(
+      `vendas-recebiveis-${new Date().toISOString().slice(0, 10)}.pdf`,
+    );
+
+    // Reabre o diálogo e escolhe "Somente contas a pagar" — deve baixar um
+    // arquivo diferente do relatório geral, confirmando que a opção certa
+    // foi respeitada, não só o botão "Baixar PDF" clicado de novo.
+    await page.getByRole("button", { name: "Baixar PDF" }).click();
+    const dialogPagar = page.getByRole("dialog");
+    const downloadPagar = page.waitForEvent("download");
+    await dialogPagar.getByRole("button", { name: "Somente contas a pagar" }).click();
+    expect((await downloadPagar).suggestedFilename()).toBe(
+      `contas-a-pagar-${new Date().toISOString().slice(0, 10)}.pdf`,
+    );
   });
 });

@@ -142,7 +142,7 @@ test.describe("Fase 6 — Dashboard", () => {
     await expect(page.getByText("Atrasada")).toBeVisible();
   });
 
-  test("vendedor não vê KPIs financeiros sensíveis (Lucro líquido, Margem média)", async ({
+  test("vendedor não vê KPIs financeiros sensíveis (Lucro líquido, Margem média, Ticket médio, A receber)", async ({
     page,
   }) => {
     const vendedorEmail = uniqueEmail("dash-vendedor");
@@ -173,6 +173,10 @@ test.describe("Fase 6 — Dashboard", () => {
     await expect(page.getByText("Em estoque", { exact: true })).toBeVisible();
     await expect(page.getByText("Lucro líquido")).not.toBeVisible();
     await expect(page.getByText("Margem média")).not.toBeVisible();
+    await expect(page.getByText("Ticket médio")).not.toBeVisible();
+    await expect(page.getByText("A receber", { exact: true })).not.toBeVisible();
+    // "A receber no mês" continua visível — só o total geral some pro vendedor.
+    await expect(page.getByText("A receber no mês")).toBeVisible();
 
     // "Últimas movimentações" mostra a entrada em estoque, mas o valor da
     // entrada é o custo de aquisição — não pode aparecer para o vendedor.

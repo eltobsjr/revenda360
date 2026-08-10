@@ -7,6 +7,7 @@ import {
   resumoContasPagar,
   listContratosParaRelatorio,
 } from "@/lib/data/relatorios";
+import { listContasPagar } from "@/lib/data/contas-pagar";
 import { formatBRL, formatInt } from "@/lib/format";
 import { RelatoriosTabs } from "@/components/features/relatorios/relatorios-tabs";
 import { BaixarPdfVendasButton } from "@/components/features/relatorios/baixar-pdf-vendas-button";
@@ -51,7 +52,7 @@ export default async function RelatoriosPage({
       <RelatoriosTabs abaAtiva={aba} />
 
       {aba === "estoque" ? <AbaEstoque role={role} /> : null}
-      {aba === "vendas" ? <AbaVendas /> : null}
+      {aba === "vendas" ? <AbaVendas role={role} /> : null}
       {aba === "pagar" ? <AbaPagar role={role} /> : null}
     </div>
   );
@@ -144,8 +145,12 @@ const TONE_POR_STATUS: Record<string, Kpi["tone"]> = {
   Renegociada: "default",
 };
 
-async function AbaVendas() {
-  const [linhas, contratos] = await Promise.all([resumoParcelasPorStatus(), listContratosParaRelatorio()]);
+async function AbaVendas({ role }: { role: "gestor" | "vendedor" | "financeiro" }) {
+  const [linhas, contratos, contasPagar] = await Promise.all([
+    resumoParcelasPorStatus(),
+    listContratosParaRelatorio(),
+    listContasPagar(role),
+  ]);
   const kpis: Kpi[] = linhas
     .filter((l) => l.status !== "Renegociada")
     .map((l) => ({
@@ -198,7 +203,7 @@ async function AbaVendas() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <LinkDetalhado href="/financeiro/receber" texto="Ver detalhado em Contas a receber" />
-        <BaixarPdfVendasButton linhas={contratos} />
+        <BaixarPdfVendasButton linhas={contratos} contasPagar={contasPagar} />
       </div>
     </div>
   );

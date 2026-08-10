@@ -44,11 +44,17 @@ const SITUACAO_ORDEM: Record<string, number> = {
 };
 
 /** Situação do contrato = da próxima parcela pendente; "Paga" quando não há nenhuma. */
-function situacaoDoContrato(linha: ContratoRelatorioLinha): StatusParcela {
+export function situacaoDoContrato(linha: ContratoRelatorioLinha): StatusParcela {
   return linha.proximaParcela?.status ?? "Paga";
 }
 
-export function VendasRecebiveisPdf({ linhas }: { linhas: ContratoRelatorioLinha[] }) {
+export function VendasRecebiveisPdf({
+  linhas,
+  titulo = "Vendas & Recebíveis",
+}: {
+  linhas: ContratoRelatorioLinha[];
+  titulo?: string;
+}) {
   const ordenadas = [...linhas].sort((a, b) => {
     const ordemA = SITUACAO_ORDEM[situacaoDoContrato(a)] ?? 2;
     const ordemB = SITUACAO_ORDEM[situacaoDoContrato(b)] ?? 2;
@@ -61,7 +67,7 @@ export function VendasRecebiveisPdf({ linhas }: { linhas: ContratoRelatorioLinha
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Vendas & Recebíveis</Text>
+        <Text style={styles.title}>{titulo}</Text>
         <Text style={styles.subtitle}>Gerado em {formatDataBR(new Date())}</Text>
 
         <View style={styles.headerRow}>

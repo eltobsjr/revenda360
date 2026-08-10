@@ -118,16 +118,22 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
     ...(podeVerFinanceiro
       ? [{ label: "Lucro líquido", value: formatBRLSemDecimais(lucroMes), sub: null, tone: "success" as const }]
       : []),
-    { label: "Ticket médio", value: formatBRLSemDecimais(ticketMedio), sub: null, tone: "default" },
+    ...(role !== "vendedor"
+      ? [{ label: "Ticket médio", value: formatBRLSemDecimais(ticketMedio), sub: null, tone: "default" as const }]
+      : []),
     ...(podeVerFinanceiro
       ? [{ label: "Margem média", value: `${margemMedia.toFixed(1)}%`, sub: null, tone: "default" as const }]
       : []),
-    {
-      label: "A receber",
-      value: formatBRLSemDecimais(aReceberTotal),
-      sub: `${parcelasAbertas.length} parcelas`,
-      tone: "default",
-    },
+    ...(role !== "vendedor"
+      ? [
+          {
+            label: "A receber",
+            value: formatBRLSemDecimais(aReceberTotal),
+            sub: `${parcelasAbertas.length} parcelas`,
+            tone: "default" as const,
+          },
+        ]
+      : []),
     {
       label: "A receber no mês",
       value: formatBRLSemDecimais(aReceberMes),
