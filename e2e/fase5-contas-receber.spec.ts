@@ -93,7 +93,7 @@ test.describe("Fase 5 — Contas a receber", () => {
     const valorFinalEsperado = 1000 + jurosEsperado;
 
     await logar(page, gestorEmail);
-    await page.goto("/financeiro/receber");
+    await page.goto("/financeiro/receber?mode=parcela");
 
     const linha = page.getByRole("row", { name: /José Atraso E2E/ });
     await expect(linha.getByText("Atrasada")).toBeVisible();
@@ -172,5 +172,60 @@ test.describe("Fase 5 — Contas a receber", () => {
     const linkCobrar = linha.getByRole("link", { name: "Cobrar" });
     await expect(linkCobrar).toHaveAttribute("href", /^https:\/\/wa\.me\/5511988887777\?text=/);
     await expect(linkCobrar).toHaveAttribute("target", "_blank");
+  });
+
+  test("Contas a receber abre por padrão na visão por contrato, e o card mostra e permite baixar a próxima parcela com juros", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "moto",
+        placa: "RCB3C33",
+        marca: "Yamaha",
+        modelo: "Fazer 250",
+        valorCompra: 12000,
+        precoVenda: 16990,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Carlos Padrão E2E" });
+    const vencimento = diasAtras(15);
+
+    const { parcelas } = await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento, valor: 800 }],
+    });
+
+    const diasAtrasoEsperado = calcularDiasAtraso(vencimento, new Date());
+    const jurosEsperado = calcularJurosMulta(800, diasAtrasoEsperado, 2, 0.1);
+    const valorComJurosEsperado = 800 + jurosEsperado;
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber");
+    await expect(page).not.toHaveURL(/mode=/);
+    await expect(page.getByRole("table")).toHaveCount(0);
+
+    const gatilhoCard = page.getByRole("button", { name: /Carlos Padrão E2E/ });
+    await expect(gatilhoCard.getByText(formatBRL(valorComJurosEsperado))).toBeVisible();
+    await gatilhoCard.click();
+
+    await expect(page.getByText(/Carlos Padrão E2E — Yamaha Fazer 250/)).toBeVisible();
+    await expect(page.getByText(formatBRL(valorComJurosEsperado)).last()).toBeVisible();
+
+    await page.getByRole("button", { name: "Dar baixa" }).click();
+    await expect(page.getByText(formatBRL(jurosEsperado))).toBeVisible();
+    await page.getByRole("button", { name: "Confirmar recebimento" }).click();
+    await expect(page.getByRole("button", { name: "Confirmar recebimento" })).not.toBeVisible();
+    await expect(page.getByText("Nenhuma parcela pendente.")).toBeVisible();
+
+    const admin = createTestAdminClient();
+    const { data: parcela } = await admin
+      .from("parcelas")
+      .select("status, valor_pago")
+      .eq("id", parcelas[0].id)
+      .single();
+    expect(parcela?.status).toBe("Paga");
+    expect(parcela?.valor_pago).toBe(valorComJurosEsperado);
   });
 });

@@ -16,7 +16,7 @@ export default async function ContasReceberPage({
   searchParams: Promise<{ mode?: string; status?: string }>;
 }) {
   const { mode, status } = await searchParams;
-  const modoAtivo = mode === "contrato" || mode === "inadimplencia" ? mode : "parcela";
+  const modoAtivo = mode === "parcela" || mode === "inadimplencia" ? mode : "contrato";
   const filtroStatus = STATUS_FILTRAVEIS.includes(status as StatusParcela)
     ? (status as StatusParcela)
     : undefined;
@@ -54,7 +54,14 @@ export default async function ContasReceberPage({
         </>
       ) : null}
 
-      {modoAtivo === "contrato" ? <ContratosGrid contratos={await listContratos()} /> : null}
+      {modoAtivo === "contrato" ? (
+        <ContratosGrid
+          contratos={await listContratos()}
+          parcelas={await listParcelas()}
+          multaPct={tenantConfig.multa_pct}
+          moraPctDia={tenantConfig.mora_pct_dia}
+        />
+      ) : null}
 
       {modoAtivo === "inadimplencia" ? (
         <InadimplenciaTable linhas={await listInadimplencia()} />

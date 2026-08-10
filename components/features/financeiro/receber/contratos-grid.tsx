@@ -1,9 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { formatBRL, formatDataBR } from "@/lib/format";
-import { RenegociarDialog } from "./renegociar-dialog";
-import type { ContratoRow } from "@/lib/data/contas-receber";
+import { ContratoCard } from "./contrato-card";
+import type { ContratoRow, ParcelaRow } from "@/lib/data/contas-receber";
 
-export function ContratosGrid({ contratos }: { contratos: ContratoRow[] }) {
+export function ContratosGrid({
+  contratos,
+  parcelas,
+  multaPct,
+  moraPctDia,
+}: {
+  contratos: ContratoRow[];
+  parcelas: ParcelaRow[];
+  multaPct: number;
+  moraPctDia: number;
+}) {
   if (contratos.length === 0) {
     return (
       <Card>
@@ -14,33 +23,27 @@ export function ContratosGrid({ contratos }: { contratos: ContratoRow[] }) {
     );
   }
 
+  const pendentesPorContrato = new Map<string, ParcelaRow[]>();
+  for (const p of parcelas) {
+    if (p.status === "Paga") continue;
+    const lista = pendentesPorContrato.get(p.contratoId) ?? [];
+    lista.push(p);
+    pendentesPorContrato.set(p.contratoId, lista);
+  }
+  for (const lista of pendentesPorContrato.values()) {
+    lista.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  }
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {contratos.map((ct) => (
-        <Card key={ct.id}>
-          <CardContent className="flex flex-col gap-3">
-            <div>
-              <div className="text-sm font-semibold">{ct.cliente}</div>
-              <div className="text-xs text-muted-foreground">{ct.veiculo}</div>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-success" style={{ width: `${ct.pctPago}%` }} />
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatBRL(ct.totalPago)} pago</span>
-              <span>{formatBRL(ct.saldo)} saldo</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Próximo vencimento:{" "}
-              <strong className="font-medium text-foreground">
-                {ct.proximoVencimento ? formatDataBR(ct.proximoVencimento) : "—"}
-              </strong>
-            </div>
-            {ct.saldo > 0 ? (
-              <RenegociarDialog contrato={ct} />
-            ) : null}
-          </CardContent>
-        </Card>
+        <ContratoCard
+          key={ct.id}
+          contrato={ct}
+          parcelasPendentes={pendentesPorContrato.get(ct.id) ?? []}
+          multaPct={multaPct}
+          moraPctDia={moraPctDia}
+        />
       ))}
     </div>
   );
