@@ -57,6 +57,7 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
   const ativos = veiculos.filter((v) => !STATUS_INATIVO.has(v.status));
 
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
+  const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().slice(0, 10);
   const inicioJanela12Meses = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1)
     .toISOString()
     .slice(0, 10);
@@ -98,6 +99,9 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
     .reduce((soma, p) => soma + (p.valor - p.valorPago), 0);
   const inadimplPct = aReceberTotal > 0 ? (atrasadoR / aReceberTotal) * 100 : 0;
 
+  const parcelasMes = parcelasAbertas.filter((p) => p.vencimento >= inicioMes && p.vencimento <= fimMes);
+  const aReceberMes = parcelasMes.reduce((soma, p) => soma + (p.valor - p.valorPago), 0);
+
   const kpis: Kpi[] = [
     {
       label: "Em estoque",
@@ -122,6 +126,12 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
       label: "A receber",
       value: formatBRLSemDecimais(aReceberTotal),
       sub: `${parcelasAbertas.length} parcelas`,
+      tone: "default",
+    },
+    {
+      label: "A receber no mês",
+      value: formatBRLSemDecimais(aReceberMes),
+      sub: `${parcelasMes.length} parcela(s)`,
       tone: "default",
     },
     {
