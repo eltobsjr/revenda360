@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrandSwitcher } from "@/components/brand-switcher";
+import { BrandLogo } from "@/components/brand-logo";
 import { AvatarIniciais } from "@/components/features/perfil/avatar-iniciais";
 import { NAV, MOBILE_QUICK_NAV } from "@/lib/nav";
 import { logout } from "@/app/(auth)/actions";
@@ -47,10 +48,8 @@ export function AppShell({
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            <span className="font-heading text-base font-semibold text-primary">
-              Revenda 360
-            </span>
+          <div className="flex items-center gap-2 overflow-hidden px-2 py-2">
+            <BrandLogo className="h-10 shrink-0 group-data-[collapsible=icon]:hidden" />
           </div>
         </SidebarHeader>
         <SidebarContent>

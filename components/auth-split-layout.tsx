@@ -1,3 +1,5 @@
+import { BrandLogo } from "@/components/brand-logo";
+
 export function AuthSplitLayout({
   eyebrow,
   title,
@@ -21,9 +23,7 @@ export function AuthSplitLayout({
           aria-hidden
         />
         <div className="relative">
-          <p className="font-heading text-xl font-semibold tracking-tight">
-            Revenda 360
-          </p>
+          <BrandLogo onPrimary className="block h-14" />
         </div>
         <div className="relative hidden max-w-sm flex-col gap-3 md:flex">
           <p className="font-heading text-2xl leading-tight font-medium text-balance">

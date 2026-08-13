@@ -159,6 +159,92 @@
   --sidebar-primary-foreground: oklch(0.98 0 0);
 }
 
+/* ---------------------------------------------------------------------- */
+/* Logo — 4 variantes de cor (public/logo-*.png), cada uma com versão      */
+/* "-on-light" (texto escuro) e a original (texto branco, para fundo       */
+/* escuro). A troca é 100% CSS, sem JS, pra não piscar no carregamento.    */
+/* ---------------------------------------------------------------------- */
+
+.brand-logo-img {
+  display: none;
+}
+
+[data-brand="neutro"] .brand-logo-img[data-logo="neutro-light"] {
+  display: block;
+}
+.dark[data-brand="neutro"] .brand-logo-img[data-logo="neutro-light"] {
+  display: none;
+}
+.dark[data-brand="neutro"] .brand-logo-img[data-logo="neutro-dark"] {
+  display: block;
+}
+
+[data-brand="azul"] .brand-logo-img[data-logo="azul-light"] {
+  display: block;
+}
+.dark[data-brand="azul"] .brand-logo-img[data-logo="azul-light"] {
+  display: none;
+}
+.dark[data-brand="azul"] .brand-logo-img[data-logo="azul-dark"] {
+  display: block;
+}
+
+[data-brand="verde"] .brand-logo-img[data-logo="verde-light"] {
+  display: block;
+}
+.dark[data-brand="verde"] .brand-logo-img[data-logo="verde-light"] {
+  display: none;
+}
+.dark[data-brand="verde"] .brand-logo-img[data-logo="verde-dark"] {
+  display: block;
+}
+
+[data-brand="violeta"] .brand-logo-img[data-logo="violeta-light"] {
+  display: block;
+}
+.dark[data-brand="violeta"] .brand-logo-img[data-logo="violeta-light"] {
+  display: none;
+}
+.dark[data-brand="violeta"] .brand-logo-img[data-logo="violeta-dark"] {
+  display: block;
+}
+
+/* Mesmo logo, mas sobre fundo `bg-primary` sólido (painel de auth) — o par
+   claro/escuro certo aqui segue --primary-foreground de cada combinação
+   marca+modo (ver app/globals.css tema de marca acima), que nem sempre
+   acompanha o modo claro/escuro da página (ex.: verde e neutro invertem). */
+.brand-logo-on-primary-img {
+  display: none;
+}
+
+[data-brand="neutro"] .brand-logo-on-primary-img[data-logo="neutro-dark"] {
+  display: block;
+}
+.dark[data-brand="neutro"] .brand-logo-on-primary-img[data-logo="neutro-dark"] {
+  display: none;
+}
+.dark[data-brand="neutro"] .brand-logo-on-primary-img[data-logo="neutro-light"] {
+  display: block;
+}
+
+[data-brand="azul"] .brand-logo-on-primary-img[data-logo="azul-dark"] {
+  display: block;
+}
+
+[data-brand="verde"] .brand-logo-on-primary-img[data-logo="verde-dark"] {
+  display: block;
+}
+.dark[data-brand="verde"] .brand-logo-on-primary-img[data-logo="verde-dark"] {
+  display: none;
+}
+.dark[data-brand="verde"] .brand-logo-on-primary-img[data-logo="verde-light"] {
+  display: block;
+}
+
+[data-brand="violeta"] .brand-logo-on-primary-img[data-logo="violeta-dark"] {
+  display: block;
+}
+
 @theme inline {
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
