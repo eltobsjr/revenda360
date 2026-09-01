@@ -1,10 +1,11 @@
-import { listParcelas, listContratos, listInadimplencia } from "@/lib/data/contas-receber";
+import { listParcelas, listContratos, listSituacaoClientes } from "@/lib/data/contas-receber";
 import { getTenantConfig } from "@/lib/data/tenant";
 import type { StatusParcela } from "@/lib/domain/juros";
 import { ReceberModeTabs } from "@/components/features/financeiro/receber/receber-mode-tabs";
 import { ParcelasTable } from "@/components/features/financeiro/receber/parcelas-table";
 import { ContratosGrid } from "@/components/features/financeiro/receber/contratos-grid";
-import { InadimplenciaTable } from "@/components/features/financeiro/receber/inadimplencia-table";
+import { SituacaoClientesTable } from "@/components/features/financeiro/receber/situacao-clientes-table";
+import { BaixarPdfSituacaoClientesButton } from "@/components/features/financeiro/receber/baixar-pdf-situacao-clientes-button";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 
@@ -63,9 +64,19 @@ export default async function ContasReceberPage({
         />
       ) : null}
 
-      {modoAtivo === "inadimplencia" ? (
-        <InadimplenciaTable linhas={await listInadimplencia()} />
-      ) : null}
+      {modoAtivo === "inadimplencia" ? <SituacaoClientes /> : null}
+    </div>
+  );
+}
+
+async function SituacaoClientes() {
+  const clientes = await listSituacaoClientes();
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex justify-end">
+        <BaixarPdfSituacaoClientesButton clientes={clientes} />
+      </div>
+      <SituacaoClientesTable linhas={clientes} />
     </div>
   );
 }

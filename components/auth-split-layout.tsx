@@ -23,7 +23,7 @@ export function AuthSplitLayout({
           aria-hidden
         />
         <div className="relative">
-          <BrandLogo onPrimary className="block h-14" />
+          <BrandLogo onPrimary className="block h-32 md:h-52" />
         </div>
         <div className="relative hidden max-w-sm flex-col gap-3 md:flex">
           <p className="font-heading text-2xl leading-tight font-medium text-balance">

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const MODOS = [
   { id: "parcela", label: "Por parcela" },
   { id: "contrato", label: "Por contrato" },
-  { id: "inadimplencia", label: "Inadimplência" },
+  { id: "inadimplencia", label: "Situação dos clientes" },
 ] as const;
 
 export function ReceberModeTabs({ modoAtivo }: { modoAtivo: string }) {

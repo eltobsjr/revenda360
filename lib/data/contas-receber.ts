@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { calcularDiasAtraso, statusEfetivo, type StatusParcela } from "@/lib/domain/juros";
+import { situacaoCliente, type SituacaoCliente } from "@/lib/domain/situacao-cliente";
 
 /**
  * Uma linha da visão "Por parcela". `cliente`/`veiculo` são resolvidos em
@@ -39,12 +40,15 @@ export type ContratoRow = {
   proximoVencimento: string | null;
 };
 
-export type InadimplenciaRow = {
+export type SituacaoClienteRow = {
   clienteChave: string;
   cliente: string;
-  faixa: string;
+  situacao: SituacaoCliente;
+  /** Saldo total ainda não pago do cliente — parcelas vencidas e a vencer. */
+  valorPendente: number;
+  /** Soma só das parcelas já vencidas (Atrasada/Parcial) — usado na mensagem de cobrança. */
   valorEmAtraso: number;
-  maiorAtraso: number;
+  qtdParcelasAtrasadas: number;
   whatsapp: string | null;
 };
 
@@ -131,17 +135,6 @@ async function resolverNomes(contratos: ContratoBase[]) {
   return { nomeCliente, nomeVeiculo, whatsappCliente };
 }
 
-const FAIXAS_ATRASO = [
-  { max: 15, label: "1–15 dias" },
-  { max: 30, label: "16–30 dias" },
-  { max: 60, label: "31–60 dias" },
-  { max: Infinity, label: "+60 dias" },
-] as const;
-
-function faixaDeAtraso(dias: number): string {
-  return FAIXAS_ATRASO.find((f) => dias <= f.max)!.label;
-}
-
 /** Todas as parcelas de todos os contratos do tenant, com status efetivo calculado. */
 export async function listParcelas(filtroStatus?: StatusParcela): Promise<ParcelaRow[]> {
   const supabase = await createClient();
@@ -225,43 +218,62 @@ export async function listContratos(): Promise<ContratoRow[]> {
   });
 }
 
-/** Valor em atraso agrupado por cliente, para priorizar cobrança. */
-export async function listInadimplencia(): Promise<InadimplenciaRow[]> {
+const ORDEM_SITUACAO: Record<SituacaoCliente, number> = {
+  "Atrasado 2x": 0,
+  "Atrasado 1x": 1,
+  "A vencer": 2,
+  Pago: 3,
+};
+
+/**
+ * Situação de cobrança de cada cliente com contrato ativo — não só quem está
+ * em atraso. Um cliente com parcela vencida desde antes do mês consultado
+ * precisa continuar aparecendo aqui até quitar (mesma lógica de
+ * `dentroDoPeriodoDeRelatorio`, mas aqui nem existe filtro de período: é
+ * sempre a situação atual, "está devendo ou não agora").
+ */
+export async function listSituacaoClientes(): Promise<SituacaoClienteRow[]> {
   const parcelas = await listParcelas();
-  const hoje = new Date();
 
   const porCliente = new Map<
     string,
-    { cliente: string; valor: number; maiorAtraso: number; whatsapp: string | null }
+    { cliente: string; valorPendente: number; valorEmAtraso: number; qtdAtrasadas: number; whatsapp: string | null }
   >();
   for (const p of parcelas) {
-    if (p.status !== "Atrasada" && p.status !== "Parcial") continue;
-    const dias = calcularDiasAtraso(p.vencimento, hoje);
-    const saldo = p.valor - p.valorPago;
+    if (p.status === "Renegociada") continue;
     const atual = porCliente.get(p.clienteChave) ?? {
       cliente: p.cliente,
-      valor: 0,
-      maiorAtraso: 0,
+      valorPendente: 0,
+      valorEmAtraso: 0,
+      qtdAtrasadas: 0,
       whatsapp: null,
     };
-    porCliente.set(p.clienteChave, {
-      cliente: atual.cliente,
-      valor: atual.valor + saldo,
-      maiorAtraso: Math.max(atual.maiorAtraso, dias),
-      whatsapp: atual.whatsapp ?? p.whatsapp,
-    });
+    const saldo = p.valor - p.valorPago;
+    if (p.status !== "Paga") atual.valorPendente += saldo;
+    if (p.status === "Atrasada" || p.status === "Parcial") {
+      atual.valorEmAtraso += saldo;
+      atual.qtdAtrasadas += 1;
+    }
+    atual.whatsapp = atual.whatsapp ?? p.whatsapp;
+    porCliente.set(p.clienteChave, atual);
   }
 
   return [...porCliente.entries()]
     .map(([clienteChave, v]) => ({
       clienteChave,
       cliente: v.cliente,
-      faixa: faixaDeAtraso(v.maiorAtraso),
-      valorEmAtraso: v.valor,
-      maiorAtraso: v.maiorAtraso,
+      situacao: situacaoCliente(v.valorPendente, v.qtdAtrasadas),
+      valorPendente: v.valorPendente,
+      valorEmAtraso: v.valorEmAtraso,
+      qtdParcelasAtrasadas: v.qtdAtrasadas,
       whatsapp: v.whatsapp,
     }))
-    .sort((a, b) => b.valorEmAtraso - a.valorEmAtraso);
+    .sort((a, b) => {
+      const ordemA = ORDEM_SITUACAO[a.situacao];
+      const ordemB = ORDEM_SITUACAO[b.situacao];
+      if (ordemA !== ordemB) return ordemA - ordemB;
+      return b.valorPendente - a.valorPendente;
+    });
 }
 
 /** Uma parcela específica com os dados necessários para o modal de baixa. */

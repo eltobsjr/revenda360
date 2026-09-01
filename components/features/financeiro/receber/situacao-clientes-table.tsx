@@ -7,14 +7,14 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { linkCobrancaWhatsapp } from "@/lib/domain/whatsapp";
-import type { InadimplenciaRow } from "@/lib/data/contas-receber";
+import { SituacaoClienteBadge } from "./situacao-cliente-badge";
+import type { SituacaoClienteRow } from "@/lib/data/contas-receber";
 
-export function InadimplenciaTable({ linhas }: { linhas: InadimplenciaRow[] }) {
+export function SituacaoClientesTable({ linhas }: { linhas: SituacaoClienteRow[] }) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -22,8 +22,8 @@ export function InadimplenciaTable({ linhas }: { linhas: InadimplenciaRow[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
-              <TableHead>Faixa de atraso</TableHead>
-              <TableHead>Valor em atraso</TableHead>
+              <TableHead>Situação</TableHead>
+              <TableHead>Valor pendente</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -32,15 +32,11 @@ export function InadimplenciaTable({ linhas }: { linhas: InadimplenciaRow[] }) {
               <TableRow key={r.clienteChave}>
                 <TableCell className="font-medium">{r.cliente}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
-                    {r.faixa}
-                  </Badge>
+                  <SituacaoClienteBadge situacao={r.situacao} />
                 </TableCell>
-                <TableCell className="font-semibold text-destructive">
-                  {formatBRL(r.valorEmAtraso)}
-                </TableCell>
+                <TableCell className="font-semibold">{formatBRL(r.valorPendente)}</TableCell>
                 <TableCell>
-                  {r.whatsapp ? (
+                  {r.whatsapp && r.qtdParcelasAtrasadas > 0 ? (
                     <a
                       href={linkCobrancaWhatsapp(
                         r.whatsapp,
@@ -60,7 +56,7 @@ export function InadimplenciaTable({ linhas }: { linhas: InadimplenciaRow[] }) {
             {linhas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                  Nenhum cliente inadimplente no momento.
+                  Nenhum cliente com contrato de crediário ativo.
                 </TableCell>
               </TableRow>
             ) : null}

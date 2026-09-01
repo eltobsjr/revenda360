@@ -12,6 +12,7 @@ import { ContasPagarPdf } from "./contas-pagar-pdf";
 import type { ParcelaRow } from "@/lib/data/contas-receber";
 import type { ContaPagarRow } from "@/lib/data/contas-pagar";
 import type { StatusParcela } from "@/lib/domain/juros";
+import { dentroDoPeriodoDeRelatorio } from "@/lib/domain/relatorio-periodo";
 
 type Opcao = "geral" | "pagar" | "pagas" | "vencidas" | "avencer";
 type ModoPeriodo = "mensal" | "personalizado";
@@ -61,13 +62,13 @@ export function BaixarPdfVendasButton({
       let blob: Blob;
 
       if (opcao === "pagar") {
-        const filtradas = contasPagar.filter(
-          (c) => c.vencimento >= periodo.inicio && c.vencimento <= periodo.fim,
+        const filtradas = contasPagar.filter((c) =>
+          dentroDoPeriodoDeRelatorio(c.vencimento, c.status, periodo),
         );
         blob = await pdf(<ContasPagarPdf contas={filtradas} periodo={periodo} />).toBlob();
       } else {
         const filtradas = parcelas.filter((p) => {
-          if (p.vencimento < periodo.inicio || p.vencimento > periodo.fim) return false;
+          if (!dentroDoPeriodoDeRelatorio(p.vencimento, p.status, periodo)) return false;
           if (definicao.status && p.status !== definicao.status) return false;
           return true;
         });

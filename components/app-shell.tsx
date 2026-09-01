@@ -48,8 +48,8 @@ export function AppShell({
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <div className="flex items-center gap-2 overflow-hidden px-2 py-2">
-            <BrandLogo className="h-10 shrink-0 group-data-[collapsible=icon]:hidden" />
+          <div className="flex items-center gap-2 overflow-hidden px-2 py-3">
+            <BrandLogo className="h-20 shrink-0 group-data-[collapsible=icon]:hidden" />
           </div>
         </SidebarHeader>
         <SidebarContent>
