@@ -17,7 +17,9 @@ export default async function ContasReceberPage({
   searchParams: Promise<{ mode?: string; status?: string }>;
 }) {
   const { mode, status } = await searchParams;
-  const modoAtivo = mode === "parcela" || mode === "inadimplencia" ? mode : "contrato";
+  // Padrão é "Por parcela": é a única visão com seleção múltipla e baixa em
+  // lote, o caminho mais rápido do dia a dia. As outras continuam a um clique.
+  const modoAtivo = mode === "contrato" || mode === "inadimplencia" ? mode : "parcela";
   const filtroStatus = STATUS_FILTRAVEIS.includes(status as StatusParcela)
     ? (status as StatusParcela)
     : undefined;

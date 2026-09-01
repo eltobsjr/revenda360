@@ -48,3 +48,20 @@ export function statusEfetivo(
   if (status === "A vencer" && calcularDiasAtraso(vencimento, hoje) > 0) return "Atrasada";
   return status;
 }
+
+/**
+ * Quanto se recebe ao quitar um conjunto de parcelas hoje: valor de cada uma
+ * mais o acréscimo do seu próprio atraso. É o número mostrado na barra de
+ * seleção e no modal de baixa em lote — os dois precisam bater com a soma do
+ * que o servidor grava parcela a parcela.
+ */
+export function totalComJurosMulta(
+  parcelas: { valor: number; diasAtraso: number }[],
+  multaPct: number,
+  moraPctDia: number,
+): number {
+  return parcelas.reduce(
+    (soma, p) => soma + p.valor + calcularJurosMulta(p.valor, p.diasAtraso, multaPct, moraPctDia),
+    0,
+  );
+}

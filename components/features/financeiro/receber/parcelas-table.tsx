@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Table,
   TableHeader,
@@ -14,11 +13,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL, formatDataBR } from "@/lib/format";
-import { calcularJurosMulta } from "@/lib/domain/juros";
+import { totalComJurosMulta } from "@/lib/domain/juros";
 import type { ParcelaRow } from "@/lib/data/contas-receber";
 import { ParcelaStatusBadge } from "./parcela-status-badge";
 import { BaixaParcelaDialog } from "./baixa-parcela-dialog";
 import { BaixaLoteDialog } from "./baixa-lote-dialog";
+import { useSelecaoParcelas } from "./use-selecao-parcelas";
 
 export function ParcelasTable({
   parcelas,
@@ -29,36 +29,11 @@ export function ParcelasTable({
   multaPct: number;
   moraPctDia: number;
 }) {
-  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+  const selecao = useSelecaoParcelas(parcelas);
 
   const totalValor = parcelas.reduce((soma, p) => soma + p.valor, 0);
   const totalPago = parcelas.reduce((soma, p) => soma + p.valorPago, 0);
-
-  const baixaveis = parcelas.filter((p) => p.podeBaixar);
-  // A seleção é derivada das linhas atuais, não guardada como lista à parte:
-  // depois de uma baixa a parcela deixa de ser baixável e sai daqui sozinha,
-  // sem sobrar id fantasma inflando o contador da barra de ação.
-  const parcelasSelecionadas = baixaveis.filter((p) => selecionadas.has(p.id));
-  const todasSelecionadas =
-    baixaveis.length > 0 && parcelasSelecionadas.length === baixaveis.length;
-
-  function alternarParcela(id: string, marcada: boolean) {
-    setSelecionadas((atual) => {
-      const proxima = new Set(atual);
-      if (marcada) proxima.add(id);
-      else proxima.delete(id);
-      return proxima;
-    });
-  }
-
-  function alternarTodas(marcar: boolean) {
-    setSelecionadas(marcar ? new Set(baixaveis.map((p) => p.id)) : new Set());
-  }
-
-  const totalSelecionado = parcelasSelecionadas.reduce(
-    (soma, p) => soma + p.valor + calcularJurosMulta(p.valor, p.diasAtraso, multaPct, moraPctDia),
-    0,
-  );
+  const totalSelecionado = totalComJurosMulta(selecao.selecionadas, multaPct, moraPctDia);
 
   return (
     <div className="flex flex-col gap-3">
@@ -68,12 +43,12 @@ export function ParcelasTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  {baixaveis.length > 0 ? (
+                  {selecao.baixaveis.length > 0 ? (
                     <Checkbox
                       aria-label="Selecionar todas as parcelas"
-                      checked={todasSelecionadas}
-                      indeterminate={parcelasSelecionadas.length > 0 && !todasSelecionadas}
-                      onCheckedChange={alternarTodas}
+                      checked={selecao.todasSelecionadas}
+                      indeterminate={selecao.parcialmenteSelecionadas}
+                      onCheckedChange={selecao.alternarTodas}
                     />
                   ) : null}
                 </TableHead>
@@ -94,8 +69,8 @@ export function ParcelasTable({
                     {p.podeBaixar ? (
                       <Checkbox
                         aria-label={`Selecionar parcela ${p.numero}/${p.totalParcelas} de ${p.cliente}`}
-                        checked={selecionadas.has(p.id)}
-                        onCheckedChange={(marcada) => alternarParcela(p.id, marcada)}
+                        checked={selecao.estaSelecionada(p.id)}
+                        onCheckedChange={(marcada) => selecao.alternarParcela(p.id, marcada)}
                       />
                     ) : null}
                   </TableCell>
@@ -151,13 +126,13 @@ export function ParcelasTable({
         </CardContent>
       </Card>
 
-      {parcelasSelecionadas.length > 0 ? (
+      {selecao.selecionadas.length > 0 ? (
         <BarraSelecao
-          parcelas={parcelasSelecionadas}
+          parcelas={selecao.selecionadas}
           total={totalSelecionado}
           multaPct={multaPct}
           moraPctDia={moraPctDia}
-          onLimpar={() => alternarTodas(false)}
+          onLimpar={selecao.limpar}
         />
       ) : null}
     </div>

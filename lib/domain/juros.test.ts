@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcularDiasAtraso, calcularJurosMulta, statusEfetivo } from "./juros";
+import { calcularDiasAtraso, calcularJurosMulta, statusEfetivo, totalComJurosMulta } from "./juros";
 
 // Valores de referência: contrato "ct1" do protótipo Revenda360.dc.html,
 // parcela 5/6 (venc 05/06/2026, valor 2000, status Atrasada), com HOJE
@@ -59,5 +59,26 @@ describe("statusEfetivo", () => {
     expect(statusEfetivo("Paga", "2026-06-05", HOJE)).toBe("Paga");
     expect(statusEfetivo("Parcial", "2026-06-05", HOJE)).toBe("Parcial");
     expect(statusEfetivo("Renegociada", "2026-06-05", HOJE)).toBe("Renegociada");
+  });
+});
+
+describe("totalComJurosMulta", () => {
+  it("soma valor + juros de cada parcela", () => {
+    // 1000 sem atraso (sem acréscimo) + 500 com 10 dias:
+    // multa 2% = 10, mora 0,1%/dia x 10 dias = 5 --> 515
+    expect(
+      totalComJurosMulta(
+        [
+          { valor: 1000, diasAtraso: 0 },
+          { valor: 500, diasAtraso: 10 },
+        ],
+        2,
+        0.1,
+      ),
+    ).toBeCloseTo(1000 + 515, 2);
+  });
+
+  it("é zero para lista vazia", () => {
+    expect(totalComJurosMulta([], 2, 0.1)).toBe(0);
   });
 });

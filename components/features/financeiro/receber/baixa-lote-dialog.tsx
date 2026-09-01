@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { darBaixaParcelasEmLote } from "@/app/(app)/financeiro/receber/actions";
 import { BAIXA_LOTE_INITIAL_STATE } from "@/app/(app)/financeiro/receber/baixa-parcela-state";
-import { calcularJurosMulta } from "@/lib/domain/juros";
+import { calcularJurosMulta, totalComJurosMulta } from "@/lib/domain/juros";
 import { formatBRL, formatDataBR } from "@/lib/format";
 import type { ParcelaRow } from "@/lib/data/contas-receber";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ export function BaixaLoteDialog({
     parcela: p,
     total: p.valor + calcularJurosMulta(p.valor, p.diasAtraso, multaPct, moraPctDia),
   }));
-  const totalGeral = linhas.reduce((soma, l) => soma + l.total, 0);
+  const totalGeral = totalComJurosMulta(parcelas, multaPct, moraPctDia);
   const totalJuros = linhas.reduce((soma, l) => soma + (l.total - l.parcela.valor), 0);
   const rotuloParcela = (p: ParcelaRow) =>
     `${p.cliente} — parcela ${p.numero}/${p.totalParcelas}`;

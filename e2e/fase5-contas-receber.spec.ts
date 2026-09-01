@@ -245,7 +245,36 @@ test.describe("Fase 5 — Contas a receber", () => {
     expect((await download).suggestedFilename()).toMatch(/^situacao-clientes-\d{4}-\d{2}-\d{2}\.pdf$/);
   });
 
-  test("Contas a receber abre por padrão na visão por contrato, e o card mostra e permite baixar a próxima parcela com juros", async ({
+  test("Contas a receber abre por padrão na visão por parcela, já pronta para seleção", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "moto",
+        placa: "RCB6F66",
+        marca: "Yamaha",
+        modelo: "Factor 150",
+        valorCompra: 10000,
+        precoVenda: 13900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Padrao Parcela E2E" });
+    await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAtras(5), valor: 700 }],
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber");
+
+    await expect(page).not.toHaveURL(/mode=/);
+    await expect(page.getByRole("table")).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "Selecionar todas as parcelas" })).toBeVisible();
+  });
+
+  test("na visão por contrato o card mostra e permite baixar a próxima parcela com juros", async ({
     page,
   }) => {
     const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
@@ -273,8 +302,7 @@ test.describe("Fase 5 — Contas a receber", () => {
     const valorComJurosEsperado = 800 + jurosEsperado;
 
     await logar(page, gestorEmail);
-    await page.goto("/financeiro/receber");
-    await expect(page).not.toHaveURL(/mode=/);
+    await page.goto("/financeiro/receber?mode=contrato");
     await expect(page.getByRole("table")).toHaveCount(0);
 
     const gatilhoCard = page.getByRole("button", { name: /Carlos Padrão E2E/ });
@@ -298,6 +326,62 @@ test.describe("Fase 5 — Contas a receber", () => {
       .single();
     expect(parcela?.status).toBe("Paga");
     expect(parcela?.valor_pago).toBe(valorComJurosEsperado);
+  });
+
+  test("gestor seleciona parcelas dentro do card do contrato e baixa todas de uma vez", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB7G77",
+        marca: "Volkswagen",
+        modelo: "Gol",
+        valorCompra: 30000,
+        precoVenda: 38900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Contrato Lote E2E" });
+    const vencimentos = [diasAtras(45), diasAtras(15), diasAFrente(15)];
+
+    const { parcelas } = await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: vencimentos.map((vencimento, i) => ({
+        numero: i + 1,
+        vencimento,
+        valor: 600,
+      })),
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=contrato");
+
+    await page.getByRole("button", { name: /Contrato Lote E2E/ }).click();
+    const dialogContrato = page.getByRole("dialog");
+
+    await dialogContrato
+      .getByRole("checkbox", { name: "Selecionar todas as parcelas do contrato" })
+      .click();
+    await expect(dialogContrato.getByText("3 parcelas selecionadas")).toBeVisible();
+
+    await dialogContrato.getByRole("button", { name: "Dar baixa em lote" }).click();
+    await page.getByRole("button", { name: "Confirmar 3 recebimentos" }).click();
+
+    // Esperar o modal do contrato ficar sem parcela pendente (e não só o botão
+    // sumir: ele vira "Confirmando…" antes da action terminar, o que deixaria a
+    // consulta ao banco correr com a baixa ainda em voo).
+    await expect(page.getByText("Nenhuma parcela pendente.")).toBeVisible();
+
+    const admin = createTestAdminClient();
+    const { data: baixadas } = await admin
+      .from("parcelas")
+      .select("status")
+      .in("id", parcelas.map((p) => p.id));
+
+    expect(baixadas).toHaveLength(3);
+    expect((baixadas ?? []).every((p) => p.status === "Paga")).toBe(true);
   });
 
   test("gestor seleciona várias parcelas e dá baixa em lote com uma forma de pagamento", async ({
