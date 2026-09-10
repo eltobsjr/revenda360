@@ -25,15 +25,17 @@ export function ContratosGrid({
     );
   }
 
-  const pendentesPorContrato = new Map<string, ParcelaRow[]>();
+  // Carnê completo por contrato — pagas incluídas. O card precisa mostrar as
+  // 24 parcelas, não só as em aberto: quem cobra precisa ver o que já foi
+  // pago tanto quanto o que falta.
+  const parcelasPorContrato = new Map<string, ParcelaRow[]>();
   for (const p of parcelas) {
-    if (p.status === "Paga") continue;
-    const lista = pendentesPorContrato.get(p.contratoId) ?? [];
+    const lista = parcelasPorContrato.get(p.contratoId) ?? [];
     lista.push(p);
-    pendentesPorContrato.set(p.contratoId, lista);
+    parcelasPorContrato.set(p.contratoId, lista);
   }
-  for (const lista of pendentesPorContrato.values()) {
-    lista.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  for (const lista of parcelasPorContrato.values()) {
+    lista.sort((a, b) => a.numero - b.numero);
   }
 
   return (
@@ -42,7 +44,7 @@ export function ContratosGrid({
         <ContratoCard
           key={ct.id}
           contrato={ct}
-          parcelasPendentes={pendentesPorContrato.get(ct.id) ?? []}
+          parcelas={parcelasPorContrato.get(ct.id) ?? []}
           multaPct={multaPct}
           moraPctDia={moraPctDia}
           podeDarBaixa={podeDarBaixa}

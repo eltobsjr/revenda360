@@ -317,7 +317,11 @@ test.describe("Fase 5 — Contas a receber", () => {
     await expect(page.getByText(formatBRL(jurosEsperado))).toBeVisible();
     await page.getByRole("button", { name: "Confirmar recebimento" }).click();
     await expect(page.getByRole("button", { name: "Confirmar recebimento" })).not.toBeVisible();
-    await expect(page.getByText("Nenhuma parcela pendente.")).toBeVisible();
+    // A parcela baixada continua listada no carnê (agora como "Paga"), só
+    // perde o botão de baixa — o card mostra o contrato inteiro, não só o
+    // que está em aberto.
+    await expect(page.getByText("1 parcela · 1 paga · carnê quitado")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dar baixa" })).toHaveCount(0);
 
     const admin = createTestAdminClient();
     const { data: parcela } = await admin
@@ -370,10 +374,11 @@ test.describe("Fase 5 — Contas a receber", () => {
     await dialogContrato.getByRole("button", { name: "Dar baixa em lote" }).click();
     await page.getByRole("button", { name: "Confirmar 3 recebimentos" }).click();
 
-    // Esperar o modal do contrato ficar sem parcela pendente (e não só o botão
-    // sumir: ele vira "Confirmando…" antes da action terminar, o que deixaria a
-    // consulta ao banco correr com a baixa ainda em voo).
-    await expect(page.getByText("Nenhuma parcela pendente.")).toBeVisible();
+    // Esperar o carnê ficar quitado (e não só o botão sumir: ele vira
+    // "Confirmando…" antes da action terminar, o que deixaria a consulta ao
+    // banco correr com a baixa ainda em voo). As 3 parcelas continuam
+    // listadas, agora como pagas.
+    await expect(page.getByText("3 parcelas · 3 pagas · carnê quitado")).toBeVisible();
 
     const admin = createTestAdminClient();
     const { data: baixadas } = await admin
@@ -595,5 +600,62 @@ test.describe("Fase 5 — Contas a receber", () => {
     await expect(page.getByRole("checkbox", { name: /Selecionar/ })).toHaveCount(0);
 
     await deleteUserByEmail(vendedorEmail).catch(() => {});
+  });
+
+  test("card do contrato mostra o carnê inteiro, incluindo as parcelas já pagas", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB1J11",
+        marca: "Renault",
+        modelo: "Kwid",
+        valorCompra: 33000,
+        precoVenda: 41900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Carne Completo E2E" });
+
+    // 6 parcelas: 2 já vencidas (que o cliente vai baixar) e 4 futuras. Antes
+    // desta mudança o card listava só as não pagas — o cliente da revenda
+    // reclamou de "24 parcelas e só aparecem 3".
+    const { parcelas } = await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [
+        { numero: 1, vencimento: diasAtras(60), valor: 500 },
+        { numero: 2, vencimento: diasAtras(30), valor: 500 },
+        { numero: 3, vencimento: diasAFrente(30), valor: 500 },
+        { numero: 4, vencimento: diasAFrente(60), valor: 500 },
+        { numero: 5, vencimento: diasAFrente(90), valor: 500 },
+        { numero: 6, vencimento: diasAFrente(120), valor: 500 },
+      ],
+    });
+
+    // Marca as 2 primeiras como pagas direto no banco, simulando carnê em curso.
+    const admin = createTestAdminClient();
+    await admin
+      .from("parcelas")
+      .update({ status: "Paga", valor_pago: 500, data_pagamento: diasAtras(1) })
+      .in("id", [parcelas[0].id, parcelas[1].id]);
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=contrato");
+
+    await page.getByRole("button", { name: /Carne Completo E2E/ }).click();
+    const dialog = page.getByRole("dialog");
+
+    // O resumo declara o carnê inteiro, não só o que está em aberto.
+    await expect(dialog.getByText("6 parcelas · 2 pagas · 4 em aberto")).toBeVisible();
+
+    // E as 6 linhas estão lá, incluindo as duas quitadas.
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      await expect(dialog.getByText(`Parcela ${n}/6`, { exact: false })).toBeVisible();
+    }
+
+    // Só as 4 em aberto oferecem baixa.
+    await expect(dialog.getByRole("button", { name: "Dar baixa" })).toHaveCount(4);
   });
 });
