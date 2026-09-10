@@ -24,12 +24,16 @@ export function ParcelasTable({
   parcelas,
   multaPct,
   moraPctDia,
+  podeDarBaixa,
 }: {
   parcelas: ParcelaRow[];
   multaPct: number;
   moraPctDia: number;
+  /** Vendedor consulta a carteira, mas não movimenta caixa — sem baixa nem seleção. */
+  podeDarBaixa: boolean;
 }) {
   const selecao = useSelecaoParcelas(parcelas);
+  const limiteCheio = selecao.selecionadas.length >= selecao.limite;
 
   const totalValor = parcelas.reduce((soma, p) => soma + p.valor, 0);
   const totalPago = parcelas.reduce((soma, p) => soma + p.valorPago, 0);
@@ -43,7 +47,7 @@ export function ParcelasTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  {selecao.baixaveis.length > 0 ? (
+                  {podeDarBaixa && selecao.baixaveis.length > 0 ? (
                     <Checkbox
                       aria-label="Selecionar todas as parcelas"
                       checked={selecao.todasSelecionadas}
@@ -66,10 +70,11 @@ export function ParcelasTable({
               {parcelas.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    {p.podeBaixar ? (
+                    {podeDarBaixa && p.podeBaixar ? (
                       <Checkbox
                         aria-label={`Selecionar parcela ${p.numero}/${p.totalParcelas} de ${p.cliente}`}
                         checked={selecao.estaSelecionada(p.id)}
+                        disabled={limiteCheio && !selecao.estaSelecionada(p.id)}
                         onCheckedChange={(marcada) => selecao.alternarParcela(p.id, marcada)}
                       />
                     ) : null}
@@ -86,7 +91,7 @@ export function ParcelasTable({
                     <ParcelaStatusBadge status={p.status} />
                   </TableCell>
                   <TableCell>
-                    {p.podeBaixar ? (
+                    {podeDarBaixa && p.podeBaixar ? (
                       <BaixaParcelaDialog
                         parcela={{
                           id: p.id,
@@ -96,6 +101,7 @@ export function ParcelasTable({
                           totalParcelas: p.totalParcelas,
                           vencimento: p.vencimento,
                           valor: p.valor,
+                          valorPago: p.valorPago,
                         }}
                         multaPct={multaPct}
                         moraPctDia={moraPctDia}
@@ -125,6 +131,14 @@ export function ParcelasTable({
           </Table>
         </CardContent>
       </Card>
+
+      {podeDarBaixa && selecao.excedeLimite ? (
+        <p className="text-xs text-muted-foreground">
+          A baixa em lote aceita até {selecao.limite} parcelas por vez —
+          &quot;selecionar todas&quot; marca as {selecao.limite} primeiras. Baixe em levas ou
+          filtre por status para reduzir a lista.
+        </p>
+      ) : null}
 
       {selecao.selecionadas.length > 0 ? (
         <BarraSelecao

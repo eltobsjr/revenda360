@@ -7,11 +7,13 @@ export function ContratosGrid({
   parcelas,
   multaPct,
   moraPctDia,
+  podeDarBaixa,
 }: {
   contratos: ContratoRow[];
   parcelas: ParcelaRow[];
   multaPct: number;
   moraPctDia: number;
+  podeDarBaixa: boolean;
 }) {
   if (contratos.length === 0) {
     return (
@@ -43,6 +45,7 @@ export function ContratosGrid({
           parcelasPendentes={pendentesPorContrato.get(ct.id) ?? []}
           multaPct={multaPct}
           moraPctDia={moraPctDia}
+          podeDarBaixa={podeDarBaixa}
         />
       ))}
     </div>

@@ -9,6 +9,7 @@ import {
   cleanupTenantByName,
   deleteUserByEmail,
   createTestAdminClient,
+  adicionarMembro,
 } from "./helpers/admin";
 import { calcularDiasAtraso, calcularJurosMulta } from "../lib/domain/juros";
 import { formatBRL } from "../lib/format";
@@ -475,5 +476,124 @@ test.describe("Fase 5 — Contas a receber", () => {
 
     await page.getByRole("checkbox", { name: "Selecionar todas as parcelas" }).click();
     await expect(page.getByText("1 parcela selecionada")).toBeVisible();
+  });
+
+  test("desconto em formato brasileiro (1.500,00) é aplicado como 1500, não como zero", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB7G77",
+        marca: "Volkswagen",
+        modelo: "Gol",
+        valorCompra: 28000,
+        precoVenda: 35900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Desconto Cliente E2E" });
+
+    const { parcelas } = await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAFrente(10), valor: 5000 }],
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    const linha = page.getByRole("row", { name: /Desconto Cliente E2E/ });
+    await linha.getByRole("button", { name: "Dar baixa" }).click();
+
+    // Antes da correção o parse era Number("1.500,00".replace(",", ".")) → NaN
+    // → 0: a baixa era gravada pelo valor cheio, sem desconto e sem erro.
+    await page.getByLabel("Desconto (R$)").fill("1.500,00");
+    await expect(page.getByText(formatBRL(3500))).toBeVisible();
+
+    await page.getByRole("button", { name: "Confirmar recebimento" }).click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+
+    const admin = createTestAdminClient();
+    const { data: parcela } = await admin
+      .from("parcelas")
+      .select("status, valor_pago, desconto_aplicado")
+      .eq("id", parcelas[0].id)
+      .single();
+    expect(parcela?.status).toBe("Paga");
+    expect(parcela?.desconto_aplicado).toBe(1500);
+    expect(parcela?.valor_pago).toBe(3500);
+  });
+
+  test("desconto com texto inválido bloqueia o submit em vez de virar zero", async ({ page }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "moto",
+        placa: "RCB8H88",
+        marca: "Yamaha",
+        modelo: "Fazer 250",
+        valorCompra: 12000,
+        precoVenda: 16900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Invalido Cliente E2E" });
+
+    await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAFrente(5), valor: 800 }],
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    const linha = page.getByRole("row", { name: /Invalido Cliente E2E/ });
+    await linha.getByRole("button", { name: "Dar baixa" }).click();
+
+    await page.getByLabel("Desconto (R$)").fill("abc");
+    await expect(page.getByText("Use apenas números (ex.: 1.500,00).")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirmar recebimento" })).toBeDisabled();
+  });
+
+  test("vendedor consulta contas a receber mas não tem ação de baixa", async ({ page }) => {
+    const vendedorEmail = uniqueEmail("receber-vendedor");
+    const vendedorId = await createConfirmedUser(vendedorEmail, SENHA);
+    await adicionarMembro({
+      userId: vendedorId,
+      tenantId,
+      lojaId,
+      nome: "Vendedor Receber E2E",
+      role: "vendedor",
+    });
+
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB9I99",
+        marca: "Fiat",
+        modelo: "Argo",
+        valorCompra: 40000,
+        precoVenda: 49900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Vendedor Ve E2E" });
+    await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAtras(15), valor: 900 }],
+    });
+
+    await logar(page, vendedorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    // A tela continua acessível de propósito — o vendedor precisa consultar a
+    // situação do cliente dele. O que sai são as ações que mexem em caixa.
+    await expect(page.getByRole("cell", { name: "Vendedor Ve E2E" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dar baixa" })).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: /Selecionar/ })).toHaveCount(0);
+
+    await deleteUserByEmail(vendedorEmail).catch(() => {});
   });
 });

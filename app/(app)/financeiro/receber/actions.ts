@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireProfile } from "@/lib/auth/session";
+import { requireRole } from "@/lib/auth/session";
 import { getTenantConfig } from "@/lib/data/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { aplicarBaixaParcela } from "@/lib/data/baixa-parcela";
@@ -11,6 +11,7 @@ import {
   type ResumoBaixaLote,
 } from "@/lib/domain/baixa-lote";
 import { baixaParcelaSchema, baixaLoteSchema } from "@/lib/validation/baixa-parcela.schema";
+import { parseValorBRL } from "@/lib/domain/dinheiro";
 import { renegociarContratoSchema } from "@/lib/validation/renegociacao.schema";
 
 export type BaixaParcelaState = {
@@ -23,13 +24,22 @@ export type BaixaLoteState = {
   resumo: ResumoBaixaLote | null;
 };
 
+/**
+ * Movimentar dinheiro a receber (baixa, renegociação) é ato de caixa, não de
+ * venda. A *tela* de Contas a receber continua aberta ao vendedor de
+ * propósito — ele precisa consultar a situação do cliente dele —, mas gravar
+ * baixa e renegociar ficam com gestor/financeiro, mesmo critério de
+ * Contas a pagar.
+ */
+const PAPEIS_FINANCEIROS = ["gestor", "financeiro"] as const;
+
 export type RenegociarContratoResultado = {
   novoContratoId: string | null;
   error: string | null;
 };
 
 export async function renegociarContrato(input: unknown): Promise<RenegociarContratoResultado> {
-  await requireProfile();
+  await requireRole([...PAPEIS_FINANCEIROS]);
 
   const parsed = renegociarContratoSchema.safeParse(input);
   if (!parsed.success) {
@@ -53,23 +63,31 @@ export async function darBaixaParcela(
   _prevState: BaixaParcelaState,
   formData: FormData,
 ): Promise<BaixaParcelaState> {
-  const profile = await requireProfile();
+  const profile = await requireRole([...PAPEIS_FINANCEIROS]);
+
+  // Um desconto mal digitado tem que barrar o submit, não virar zero calado:
+  // o parse antigo (`Number(texto.replace(",", "."))`) transformava "1.500,00" em NaN
+  // → 0 e "1.500" em 1,5, gravando uma baixa com desconto que ninguém pediu.
+  const desconto = parseValorBRL(String(formData.get("desconto") ?? ""));
+  if (desconto === null) {
+    return { error: "Desconto inválido. Use apenas números (ex.: 1.500,00).", sucesso: false };
+  }
 
   const parsed = baixaParcelaSchema.safeParse({
     parcelaId: String(formData.get("parcelaId") ?? ""),
-    desconto: Number(String(formData.get("desconto") ?? "0").replace(",", ".")) || 0,
+    desconto,
     formaPagamento: String(formData.get("formaPagamento") ?? ""),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos.", sucesso: false };
   }
-  const { parcelaId, desconto, formaPagamento } = parsed.data;
+  const { parcelaId, formaPagamento } = parsed.data;
 
   const supabase = await createClient();
 
   const { data: parcela, error: parcelaError } = await supabase
     .from("parcelas")
-    .select("id, vencimento, valor, status")
+    .select("id, vencimento, valor, valor_pago, status")
     .eq("id", parcelaId)
     .eq("tenant_id", profile.tenantId)
     .maybeSingle();
@@ -84,7 +102,7 @@ export async function darBaixaParcela(
   const erro = await aplicarBaixaParcela(supabase, {
     tenantId: profile.tenantId,
     tenantConfig,
-    parcela,
+    parcela: { ...parcela, valorPago: parcela.valor_pago },
     desconto,
     formaPagamento,
     hoje: new Date(),
@@ -108,7 +126,7 @@ export async function darBaixaParcelasEmLote(
   _prevState: BaixaLoteState,
   formData: FormData,
 ): Promise<BaixaLoteState> {
-  const profile = await requireProfile();
+  const profile = await requireRole([...PAPEIS_FINANCEIROS]);
 
   const parsed = baixaLoteSchema.safeParse({
     parcelaIds: formData.getAll("parcelaIds").map((id) => String(id)),
@@ -126,7 +144,7 @@ export async function darBaixaParcelasEmLote(
   // ele simplesmente não volta nesta lista e é reportado como não encontrado.
   const { data: parcelas, error: parcelasError } = await supabase
     .from("parcelas")
-    .select("id, vencimento, valor, status")
+    .select("id, vencimento, valor, valor_pago, status")
     .in("id", parcelaIds)
     .eq("tenant_id", profile.tenantId);
   if (parcelasError) {
@@ -150,7 +168,7 @@ export async function darBaixaParcelasEmLote(
         const erro = await aplicarBaixaParcela(supabase, {
           tenantId: profile.tenantId,
           tenantConfig,
-          parcela,
+          parcela: { ...parcela, valorPago: parcela.valor_pago },
           desconto: 0,
           formaPagamento,
           hoje,

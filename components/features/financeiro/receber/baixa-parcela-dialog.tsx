@@ -3,7 +3,9 @@
 import { useActionState, useState } from "react";
 import { darBaixaParcela } from "@/app/(app)/financeiro/receber/actions";
 import { BAIXA_PARCELA_INITIAL_STATE } from "@/app/(app)/financeiro/receber/baixa-parcela-state";
-import { calcularDiasAtraso, calcularJurosMulta } from "@/lib/domain/juros";
+import { calcularDiasAtraso } from "@/lib/domain/juros";
+import { calcularValoresBaixa } from "@/lib/domain/baixa-valores";
+import { parseValorBRL } from "@/lib/domain/dinheiro";
 import { formatBRL } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ export function BaixaParcelaDialog({
     totalParcelas: number;
     vencimento: string;
     valor: number;
+    valorPago: number;
   };
   multaPct: number;
   moraPctDia: number;
@@ -45,9 +48,19 @@ export function BaixaParcelaDialog({
   }
 
   const diasAtraso = calcularDiasAtraso(parcela.vencimento, new Date());
-  const juros = calcularJurosMulta(parcela.valor, diasAtraso, multaPct, moraPctDia);
-  const descontoNum = Number(desconto.replace(",", ".")) || 0;
-  const valorFinal = Math.max(0, parcela.valor + juros - descontoNum);
+  // Mesma função que o servidor usa para gravar: a prévia não pode divergir do
+  // que é persistido, nem no teto do desconto nem no saldo já pago.
+  const descontoNum = parseValorBRL(desconto);
+  const descontoInvalido = descontoNum === null;
+  const { juros, valorPagoTotal } = calcularValoresBaixa({
+    valor: parcela.valor,
+    valorPago: parcela.valorPago,
+    diasAtraso,
+    desconto: descontoNum ?? 0,
+    multaPct,
+    moraPctDia,
+  });
+  const valorFinal = valorPagoTotal - parcela.valorPago;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -83,7 +96,11 @@ export function BaixaParcelaDialog({
                 inputMode="decimal"
                 value={desconto}
                 onChange={(e) => setDesconto(e.target.value)}
+                aria-invalid={descontoInvalido}
               />
+              {descontoInvalido ? (
+                <p className="text-xs text-destructive">Use apenas números (ex.: 1.500,00).</p>
+              ) : null}
             </FormField>
             <FormField label="Forma de pagamento" htmlFor="formaPagamento">
               <NativeSelect id="formaPagamento" name="formaPagamento" defaultValue="pix">
@@ -99,7 +116,7 @@ export function BaixaParcelaDialog({
             <span className="text-success">{formatBRL(valorFinal)}</span>
           </div>
           {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
-          <Button type="submit" disabled={pending} className="w-full">
+          <Button type="submit" disabled={pending || descontoInvalido} className="w-full">
             {pending ? "Confirmando…" : "Confirmar recebimento"}
           </Button>
         </form>

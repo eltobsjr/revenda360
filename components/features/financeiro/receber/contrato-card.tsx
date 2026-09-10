@@ -17,13 +17,17 @@ export function ContratoCard({
   parcelasPendentes,
   multaPct,
   moraPctDia,
+  podeDarBaixa,
 }: {
   contrato: ContratoRow;
   parcelasPendentes: ParcelaRow[];
   multaPct: number;
   moraPctDia: number;
+  /** Vendedor consulta o contrato, mas não baixa parcela nem renegocia. */
+  podeDarBaixa: boolean;
 }) {
   const selecao = useSelecaoParcelas(parcelasPendentes);
+  const limiteCheio = selecao.selecionadas.length >= selecao.limite;
   const proxima = parcelasPendentes[0] ?? null;
   const jurosProxima = proxima ? calcularJurosMulta(proxima.valor, proxima.diasAtraso, multaPct, moraPctDia) : 0;
   const valorProximaComJuros = proxima ? proxima.valor + jurosProxima : 0;
@@ -69,7 +73,7 @@ export function ContratoCard({
               <p className="text-sm text-muted-foreground">Nenhuma parcela pendente.</p>
             ) : (
               <>
-                {selecao.baixaveis.length > 0 ? (
+                {podeDarBaixa && selecao.baixaveis.length > 0 ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Checkbox
                       aria-label="Selecionar todas as parcelas do contrato"
@@ -87,10 +91,11 @@ export function ContratoCard({
                     return (
                       <div key={p.id} className="flex items-center justify-between gap-3 border-t pt-3">
                         <div className="flex items-center gap-3">
-                          {p.podeBaixar ? (
+                          {podeDarBaixa && p.podeBaixar ? (
                             <Checkbox
                               aria-label={`Selecionar parcela ${p.numero}/${p.totalParcelas}`}
                               checked={selecao.estaSelecionada(p.id)}
+                              disabled={limiteCheio && !selecao.estaSelecionada(p.id)}
                               onCheckedChange={(marcada) => selecao.alternarParcela(p.id, marcada)}
                             />
                           ) : null}
@@ -105,7 +110,7 @@ export function ContratoCard({
                           <span className="text-sm font-semibold tabular-nums">
                             {formatBRL(p.valor + juros)}
                           </span>
-                          {p.podeBaixar ? (
+                          {podeDarBaixa && p.podeBaixar ? (
                             <BaixaParcelaDialog
                               parcela={{
                                 id: p.id,
@@ -115,6 +120,7 @@ export function ContratoCard({
                                 totalParcelas: p.totalParcelas,
                                 vencimento: p.vencimento,
                                 valor: p.valor,
+                                valorPago: p.valorPago,
                               }}
                               multaPct={multaPct}
                               moraPctDia={moraPctDia}
@@ -162,7 +168,7 @@ export function ContratoCard({
           <span>{formatBRL(contrato.totalPago)} pago</span>
           <span>{formatBRL(contrato.saldo)} saldo</span>
         </div>
-        {contrato.saldo > 0 ? <RenegociarDialog contrato={contrato} /> : null}
+        {podeDarBaixa && contrato.saldo > 0 ? <RenegociarDialog contrato={contrato} /> : null}
       </CardContent>
     </Card>
   );
