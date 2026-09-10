@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listVeiculosComFinanceiro } from "@/lib/data/veiculos";
 import { listParcelas, listUltimasBaixas } from "@/lib/data/contas-receber";
+import { selecionarTudo } from "./paginacao";
 import { agruparVendasPorMes, classificarAging, calcularMixPercentual } from "@/lib/domain/dashboard";
 import type { StatusParcela } from "@/lib/domain/juros";
 import type { UserRole } from "@/types/database.types";
@@ -62,14 +63,19 @@ export async function getDashboardData(role: UserRole): Promise<DashboardData> {
     .toISOString()
     .slice(0, 10);
 
-  const { data: vendasJanela, error: vendasError } = await supabase
-    .from("vendas")
-    .select("veiculo_id, valor_final, comissao_valor, data_venda")
-    .eq("status", "confirmada")
-    .gte("data_venda", inicioJanela12Meses);
-  if (vendasError) throw new Error(`Falha ao listar vendas: ${vendasError.message}`);
-
-  const vendas = vendasJanela ?? [];
+  // Alimenta faturamento, ticket médio e lucro: truncada em 1000 linhas, os
+  // KPIs apareceriam menores que a realidade sem nenhum sinal de erro.
+  const vendas = await selecionarTudo((de, ate) =>
+    supabase
+      .from("vendas")
+      .select("veiculo_id, valor_final, comissao_valor, data_venda")
+      .eq("status", "confirmada")
+      .gte("data_venda", inicioJanela12Meses)
+      .order("id")
+      .range(de, ate),
+  ).catch((e: Error) => {
+    throw new Error(`Falha ao listar vendas: ${e.message}`);
+  });
   const vendasMes = vendas.filter((v) => v.data_venda >= inicioMes);
 
   const faturamentoMes = vendasMes.reduce((soma, v) => soma + v.valor_final, 0);
