@@ -7,8 +7,6 @@ import { ParcelasTable } from "@/components/features/financeiro/receber/parcelas
 import { ContratosGrid } from "@/components/features/financeiro/receber/contratos-grid";
 import { SituacaoClientesTable } from "@/components/features/financeiro/receber/situacao-clientes-table";
 import { BaixarPdfSituacaoClientesButton } from "@/components/features/financeiro/receber/baixar-pdf-situacao-clientes-button";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { Button } from "@/components/ui/button";
 
 const STATUS_FILTRAVEIS: StatusParcela[] = ["A vencer", "Paga", "Atrasada", "Parcial"];
 
@@ -42,28 +40,16 @@ export default async function ContasReceberPage({
       </div>
 
       {modoAtivo === "parcela" ? (
-        <>
-          <form className="flex items-end gap-3" action="/financeiro/receber">
-            <input type="hidden" name="mode" value="parcela" />
-            <NativeSelect name="status" defaultValue={filtroStatus ?? "todos"} className="w-48">
-              <NativeSelectOption value="todos">Status: todos</NativeSelectOption>
-              {STATUS_FILTRAVEIS.map((s) => (
-                <NativeSelectOption key={s} value={s}>
-                  {s}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-            <Button type="submit" variant="outline">
-              Filtrar
-            </Button>
-          </form>
-          <ParcelasTable
-            parcelas={await listParcelas(filtroStatus)}
-            multaPct={tenantConfig.multa_pct}
-            moraPctDia={tenantConfig.mora_pct_dia}
-            podeDarBaixa={podeDarBaixa}
-          />
-        </>
+        // Sem filtro no servidor: a barra de filtros da tabela faz tudo no
+        // client, respondendo a cada tecla. `?status=` continua valendo como
+        // valor inicial, para link de fora chegar já filtrado.
+        <ParcelasTable
+          parcelas={await listParcelas()}
+          multaPct={tenantConfig.multa_pct}
+          moraPctDia={tenantConfig.mora_pct_dia}
+          podeDarBaixa={podeDarBaixa}
+          statusInicial={filtroStatus}
+        />
       ) : null}
 
       {modoAtivo === "contrato" ? (

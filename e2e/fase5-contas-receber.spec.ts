@@ -658,4 +658,72 @@ test.describe("Fase 5 — Contas a receber", () => {
     // Só as 4 em aberto oferecem baixa.
     await expect(dialog.getByRole("button", { name: "Dar baixa" })).toHaveCount(4);
   });
+
+  test("busca por cliente e filtros dividem a lista de parcelas", async ({ page }) => {
+    const [motoId, carroId] = await seedVeiculos(tenantId, lojaId, [
+      { tipo: "moto", placa: "RCB2K22", marca: "Honda", modelo: "Titan 160", valorCompra: 9000, precoVenda: 13900 },
+      { tipo: "carro", placa: "RCB3L33", marca: "Fiat", modelo: "Uno", valorCompra: 20000, precoVenda: 26900 },
+    ]);
+    const anaId = await seedCliente(tenantId, { nome: "Ana Búsca E2E" });
+    const brunoId = await seedCliente(tenantId, { nome: "Bruno Filtro E2E" });
+
+    // Ana: 1 atrasada há ~100 dias e 1 futura. Bruno: 1 atrasada há ~10 dias.
+    await seedContratoCrediario(tenantId, {
+      veiculoId: motoId,
+      vendedorId: gestorId,
+      clienteId: anaId,
+      parcelas: [
+        { numero: 1, vencimento: diasAtras(100), valor: 300 },
+        { numero: 2, vencimento: diasAFrente(45), valor: 300 },
+      ],
+    });
+    await seedContratoCrediario(tenantId, {
+      veiculoId: carroId,
+      vendedorId: gestorId,
+      clienteId: brunoId,
+      parcelas: [{ numero: 1, vencimento: diasAtras(10), valor: 700 }],
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    const busca = page.getByLabel("Buscar cliente ou veículo");
+    const linhaAna = page.getByRole("row", { name: /Ana Búsca E2E/ });
+    const linhaBruno = page.getByRole("row", { name: /Bruno Filtro E2E/ });
+
+    // Sem filtro, os dois aparecem.
+    await expect(linhaAna.first()).toBeVisible();
+    await expect(linhaBruno).toBeVisible();
+
+    // Busca por nome, sem acento e em caixa baixa.
+    await busca.fill("ana busca");
+    await expect(linhaAna.first()).toBeVisible();
+    await expect(linhaBruno).toHaveCount(0);
+    await expect(page.getByText("2 de 3 parcelas")).toBeVisible();
+
+    // Busca também casa com o veículo.
+    await busca.fill("uno");
+    await expect(linhaBruno).toBeVisible();
+    await expect(linhaAna).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Limpar filtros" }).click();
+    await expect(linhaAna.first()).toBeVisible();
+    await expect(linhaBruno).toBeVisible();
+
+    // Faixa de atraso separa quem está atrasado há muito de quem atrasou pouco.
+    await page.getByLabel("Faixa de atraso").selectOption("90+");
+    await expect(linhaAna.first()).toBeVisible();
+    await expect(linhaBruno).toHaveCount(0);
+
+    await page.getByLabel("Faixa de atraso").selectOption("1-30");
+    await expect(linhaBruno).toBeVisible();
+    await expect(linhaAna).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Limpar filtros" }).click();
+
+    // Vencimento separa o que já venceu do que ainda vai vencer.
+    await page.getByLabel("Vencimento").selectOption("futuras");
+    await expect(page.getByText("1 de 3 parcelas")).toBeVisible();
+    await expect(linhaBruno).toHaveCount(0);
+  });
 });

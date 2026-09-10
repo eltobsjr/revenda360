@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Table,
   TableHeader,
@@ -12,10 +15,39 @@ import { MessageCircle } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { linkCobrancaWhatsapp } from "@/lib/domain/whatsapp";
 import { SituacaoClienteBadge } from "./situacao-cliente-badge";
+import { casaBusca, dentroDoAtraso } from "@/lib/domain/filtros-receber";
+import {
+  FiltrosReceber,
+  CRITERIOS_VAZIOS,
+  type CriteriosReceber,
+} from "./filtros-receber";
 import type { SituacaoClienteRow } from "@/lib/data/contas-receber";
 
-export function SituacaoClientesTable({ linhas }: { linhas: SituacaoClienteRow[] }) {
+const SITUACOES = ["Atrasado 2x", "Atrasado 1x", "A vencer", "Pago"];
+
+export function SituacaoClientesTable({ linhas: todas }: { linhas: SituacaoClienteRow[] }) {
+  const [criterios, setCriterios] = useState<CriteriosReceber>(CRITERIOS_VAZIOS);
+
+  const linhas = todas.filter(
+    (r) =>
+      casaBusca(criterios.busca, [r.cliente]) &&
+      (criterios.situacao === "todos" || r.situacao === criterios.situacao) &&
+      dentroDoAtraso(r.maiorAtraso, criterios.atraso),
+  );
+
   return (
+    <div className="flex flex-col gap-3">
+      <FiltrosReceber
+        criterios={criterios}
+        onChange={setCriterios}
+        situacoes={SITUACOES}
+        rotuloSituacao="Situação"
+        comAtraso
+        totalFiltrado={linhas.length}
+        total={todas.length}
+        unidade="cliente"
+      />
+
     <Card>
       <CardContent className="p-0">
         <Table>
@@ -56,7 +88,9 @@ export function SituacaoClientesTable({ linhas }: { linhas: SituacaoClienteRow[]
             {linhas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                  Nenhum cliente com contrato de crediário ativo.
+                  {todas.length === 0
+                    ? "Nenhum cliente com contrato de crediário ativo."
+                    : "Nenhum cliente para os filtros escolhidos."}
                 </TableCell>
               </TableRow>
             ) : null}
@@ -64,5 +98,6 @@ export function SituacaoClientesTable({ linhas }: { linhas: SituacaoClienteRow[]
         </Table>
       </CardContent>
     </Card>
+    </div>
   );
 }

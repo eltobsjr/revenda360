@@ -50,6 +50,8 @@ export type SituacaoClienteRow = {
   /** Soma só das parcelas já vencidas (Atrasada/Parcial) — usado na mensagem de cobrança. */
   valorEmAtraso: number;
   qtdParcelasAtrasadas: number;
+  /** Maior atraso, em dias, entre as parcelas vencidas — alimenta o filtro de aging. */
+  maiorAtraso: number;
   whatsapp: string | null;
 };
 
@@ -260,7 +262,14 @@ export async function listSituacaoClientes(): Promise<SituacaoClienteRow[]> {
 
   const porCliente = new Map<
     string,
-    { cliente: string; valorPendente: number; valorEmAtraso: number; qtdAtrasadas: number; whatsapp: string | null }
+    {
+      cliente: string;
+      valorPendente: number;
+      valorEmAtraso: number;
+      qtdAtrasadas: number;
+      maiorAtraso: number;
+      whatsapp: string | null;
+    }
   >();
   for (const p of parcelas) {
     if (p.status === "Renegociada") continue;
@@ -269,6 +278,7 @@ export async function listSituacaoClientes(): Promise<SituacaoClienteRow[]> {
       valorPendente: 0,
       valorEmAtraso: 0,
       qtdAtrasadas: 0,
+      maiorAtraso: 0,
       whatsapp: null,
     };
     const saldo = p.valor - p.valorPago;
@@ -276,6 +286,7 @@ export async function listSituacaoClientes(): Promise<SituacaoClienteRow[]> {
     if (p.status === "Atrasada" || p.status === "Parcial") {
       atual.valorEmAtraso += saldo;
       atual.qtdAtrasadas += 1;
+      atual.maiorAtraso = Math.max(atual.maiorAtraso, p.diasAtraso);
     }
     atual.whatsapp = atual.whatsapp ?? p.whatsapp;
     porCliente.set(p.clienteChave, atual);
@@ -289,6 +300,7 @@ export async function listSituacaoClientes(): Promise<SituacaoClienteRow[]> {
       valorPendente: v.valorPendente,
       valorEmAtraso: v.valorEmAtraso,
       qtdParcelasAtrasadas: v.qtdAtrasadas,
+      maiorAtraso: v.maiorAtraso,
       whatsapp: v.whatsapp,
     }))
     .sort((a, b) => {

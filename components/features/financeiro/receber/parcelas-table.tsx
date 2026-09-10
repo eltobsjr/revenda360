@@ -9,29 +9,57 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL, formatDataBR } from "@/lib/format";
 import { totalComJurosMulta } from "@/lib/domain/juros";
+import { casaBusca, dentroDoAtraso, dentroDoVencimento } from "@/lib/domain/filtros-receber";
+import {
+  FiltrosReceber,
+  CRITERIOS_VAZIOS,
+  type CriteriosReceber,
+} from "./filtros-receber";
 import type { ParcelaRow } from "@/lib/data/contas-receber";
 import { ParcelaStatusBadge } from "./parcela-status-badge";
 import { BaixaParcelaDialog } from "./baixa-parcela-dialog";
 import { BaixaLoteDialog } from "./baixa-lote-dialog";
 import { useSelecaoParcelas } from "./use-selecao-parcelas";
 
+const STATUS_FILTRAVEIS = ["A vencer", "Atrasada", "Paga", "Parcial"];
+
 export function ParcelasTable({
-  parcelas,
+  parcelas: todas,
   multaPct,
   moraPctDia,
   podeDarBaixa,
+  statusInicial,
 }: {
   parcelas: ParcelaRow[];
   multaPct: number;
   moraPctDia: number;
   /** Vendedor consulta a carteira, mas não movimenta caixa — sem baixa nem seleção. */
   podeDarBaixa: boolean;
+  /** Status vindo de `?status=` na URL, para links de fora já chegarem filtrados. */
+  statusInicial?: string;
 }) {
+  const [criterios, setCriterios] = useState<CriteriosReceber>({
+    ...CRITERIOS_VAZIOS,
+    situacao: statusInicial ?? "todos",
+  });
+
+  const hoje = new Date();
+  const parcelas = todas.filter(
+    (p) =>
+      casaBusca(criterios.busca, [p.cliente, p.veiculo]) &&
+      (criterios.situacao === "todos" || p.status === criterios.situacao) &&
+      dentroDoVencimento(p.vencimento, criterios.vencimento, hoje) &&
+      dentroDoAtraso(p.diasAtraso, criterios.atraso),
+  );
+
+  // A seleção enxerga só o que está na tela: baixar em lote o que o filtro
+  // escondeu seria baixa às cegas.
   const selecao = useSelecaoParcelas(parcelas);
   const limiteCheio = selecao.selecionadas.length >= selecao.limite;
 
@@ -41,6 +69,17 @@ export function ParcelasTable({
 
   return (
     <div className="flex flex-col gap-3">
+      <FiltrosReceber
+        criterios={criterios}
+        onChange={setCriterios}
+        situacoes={STATUS_FILTRAVEIS}
+        rotuloSituacao="Situação"
+        comVencimento
+        comAtraso
+        totalFiltrado={parcelas.length}
+        total={todas.length}
+        unidade="parcela"
+      />
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -113,7 +152,9 @@ export function ParcelasTable({
               {parcelas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                    Nenhuma parcela encontrada.
+                    {todas.length === 0
+                      ? "Nenhuma parcela encontrada."
+                      : "Nenhuma parcela para os filtros escolhidos."}
                   </TableCell>
                 </TableRow>
               ) : null}
