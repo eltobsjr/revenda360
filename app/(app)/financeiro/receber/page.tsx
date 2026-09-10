@@ -1,3 +1,4 @@
+import { getCurrentProfile } from "@/lib/auth/session";
 import { listParcelas, listContratos, listSituacaoClientes } from "@/lib/data/contas-receber";
 import { getTenantConfig } from "@/lib/data/tenant";
 import type { StatusParcela } from "@/lib/domain/juros";
@@ -26,6 +27,13 @@ export default async function ContasReceberPage({
 
   const tenantConfig = await getTenantConfig();
 
+  // A tela toda continua visível ao vendedor de propósito (ele precisa
+  // consultar a situação do cliente dele). O que sai são as ações que mexem
+  // em caixa — baixa e renegociação —, restritas a gestor/financeiro tanto
+  // aqui quanto nas server actions.
+  const profile = await getCurrentProfile();
+  const podeDarBaixa = profile?.role === "gestor" || profile?.role === "financeiro";
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -53,6 +61,7 @@ export default async function ContasReceberPage({
             parcelas={await listParcelas(filtroStatus)}
             multaPct={tenantConfig.multa_pct}
             moraPctDia={tenantConfig.mora_pct_dia}
+            podeDarBaixa={podeDarBaixa}
           />
         </>
       ) : null}
@@ -63,6 +72,7 @@ export default async function ContasReceberPage({
           parcelas={await listParcelas()}
           multaPct={tenantConfig.multa_pct}
           moraPctDia={tenantConfig.mora_pct_dia}
+          podeDarBaixa={podeDarBaixa}
         />
       ) : null}
 

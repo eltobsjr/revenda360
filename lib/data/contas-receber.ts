@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { selecionarTudo } from "./paginacao";
 import { calcularDiasAtraso, statusEfetivo, type StatusParcela } from "@/lib/domain/juros";
 import { situacaoCliente, type SituacaoCliente } from "@/lib/domain/situacao-cliente";
 
@@ -72,14 +73,19 @@ type ContratoBase = {
  */
 async function carregarContratosBase(): Promise<Map<string, ContratoBase>> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("contratos_crediario")
-    .select("id, qtd_parcelas, valor_total, cliente_id, veiculo_id, venda_id, status")
-    .neq("status", "Renegociado");
-  if (error) throw new Error(`Falha ao listar contratos de crediário: ${error.message}`);
+  const data = await selecionarTudo((de, ate) =>
+    supabase
+      .from("contratos_crediario")
+      .select("id, qtd_parcelas, valor_total, cliente_id, veiculo_id, venda_id, status")
+      .neq("status", "Renegociado")
+      .order("id")
+      .range(de, ate),
+  ).catch((e: Error) => {
+    throw new Error(`Falha ao listar contratos de crediário: ${e.message}`);
+  });
 
   const mapa = new Map<string, ContratoBase>();
-  for (const c of data ?? []) mapa.set(c.id, c);
+  for (const c of data) mapa.set(c.id, c);
   return mapa;
 }
 
@@ -91,32 +97,36 @@ async function resolverNomes(contratos: ContratoBase[]) {
   const veiculoIds = [...new Set(contratos.map((c) => c.veiculo_id))];
   const vendaIds = [...new Set(contratos.map((c) => c.venda_id))];
 
-  const [clientesRes, veiculosRes, vendasRes] = await Promise.all([
+  // Paginados: um contrato por cliente/veículo, então acima de 1000 contratos
+  // estes `in` também passariam do teto do PostgREST e voltariam incompletos —
+  // o nome cairia no fallback "Cliente"/"Veículo" sem erro nenhum na tela.
+  const [clientes, veiculos, vendas] = await Promise.all([
     clienteIds.length
-      ? supabase.from("clientes").select("id, nome, whatsapp").in("id", clienteIds)
-      : Promise.resolve({
-          data: [] as { id: string; nome: string; whatsapp: string | null }[],
-          error: null,
-        }),
+      ? selecionarTudo((de, ate) =>
+          supabase.from("clientes").select("id, nome, whatsapp").in("id", clienteIds).order("id").range(de, ate),
+        ).catch((e: Error) => {
+          throw new Error(`Falha ao resolver clientes: ${e.message}`);
+        })
+      : Promise.resolve([] as { id: string; nome: string; whatsapp: string | null }[]),
     veiculoIds.length
-      ? supabase.from("veiculos").select("id, marca, modelo").in("id", veiculoIds)
-      : Promise.resolve({ data: [] as { id: string; marca: string; modelo: string }[], error: null }),
+      ? selecionarTudo((de, ate) =>
+          supabase.from("veiculos").select("id, marca, modelo").in("id", veiculoIds).order("id").range(de, ate),
+        ).catch((e: Error) => {
+          throw new Error(`Falha ao resolver veículos: ${e.message}`);
+        })
+      : Promise.resolve([] as { id: string; marca: string; modelo: string }[]),
     vendaIds.length
-      ? supabase.from("vendas").select("id, cliente_nome_avulso").in("id", vendaIds)
-      : Promise.resolve({ data: [] as { id: string; cliente_nome_avulso: string | null }[], error: null }),
+      ? selecionarTudo((de, ate) =>
+          supabase.from("vendas").select("id, cliente_nome_avulso").in("id", vendaIds).order("id").range(de, ate),
+        ).catch((e: Error) => {
+          throw new Error(`Falha ao resolver vendas: ${e.message}`);
+        })
+      : Promise.resolve([] as { id: string; cliente_nome_avulso: string | null }[]),
   ]);
 
-  if (clientesRes.error) throw new Error(`Falha ao resolver clientes: ${clientesRes.error.message}`);
-  if (veiculosRes.error) throw new Error(`Falha ao resolver veículos: ${veiculosRes.error.message}`);
-  if (vendasRes.error) throw new Error(`Falha ao resolver vendas: ${vendasRes.error.message}`);
-
-  const clientePorId = new Map((clientesRes.data ?? []).map((c) => [c.id, c]));
-  const veiculoPorId = new Map(
-    (veiculosRes.data ?? []).map((v) => [v.id, `${v.marca} ${v.modelo}`]),
-  );
-  const nomeAvulsoPorVenda = new Map(
-    (vendasRes.data ?? []).map((v) => [v.id, v.cliente_nome_avulso]),
-  );
+  const clientePorId = new Map(clientes.map((c) => [c.id, c]));
+  const veiculoPorId = new Map(veiculos.map((v) => [v.id, `${v.marca} ${v.modelo}`]));
+  const nomeAvulsoPorVenda = new Map(vendas.map((v) => [v.id, v.cliente_nome_avulso]));
 
   function nomeCliente(contrato: ContratoBase): string {
     if (contrato.cliente_id) return clientePorId.get(contrato.cliente_id)?.nome ?? "Cliente";
@@ -144,15 +154,23 @@ export async function listParcelas(filtroStatus?: StatusParcela): Promise<Parcel
 
   const { nomeCliente, nomeVeiculo, whatsappCliente } = await resolverNomes(contratos);
 
-  const { data: parcelas, error } = await supabase
-    .from("parcelas")
-    .select("id, contrato_id, numero, vencimento, valor, valor_pago, status")
-    .in("contrato_id", contratos.map((c) => c.id))
-    .order("vencimento");
-  if (error) throw new Error(`Falha ao listar parcelas: ${error.message}`);
+  const parcelas = await selecionarTudo((de, ate) =>
+    supabase
+      .from("parcelas")
+      .select("id, contrato_id, numero, vencimento, valor, valor_pago, status")
+      .in("contrato_id", contratos.map((c) => c.id))
+      // `id` como desempate: só `vencimento` não é ordenação estável (várias
+      // parcelas vencem no mesmo dia) e linha podia repetir ou sumir na
+      // virada de página.
+      .order("vencimento")
+      .order("id")
+      .range(de, ate),
+  ).catch((e: Error) => {
+    throw new Error(`Falha ao listar parcelas: ${e.message}`);
+  });
 
   const hoje = new Date();
-  const linhas: ParcelaRow[] = (parcelas ?? []).map((p) => {
+  const linhas: ParcelaRow[] = parcelas.map((p) => {
     const contrato = contratosPorId.get(p.contrato_id)!;
     const status = statusEfetivo(p.status, p.vencimento, hoje);
     return {
@@ -185,17 +203,22 @@ export async function listContratos(): Promise<ContratoRow[]> {
 
   const { nomeCliente, nomeVeiculo } = await resolverNomes(contratos);
 
-  const { data: parcelas, error } = await supabase
-    .from("parcelas")
-    .select("contrato_id, vencimento, valor_pago, status")
-    .in("contrato_id", contratos.map((c) => c.id))
-    .order("vencimento");
-  if (error) throw new Error(`Falha ao listar parcelas dos contratos: ${error.message}`);
+  const parcelas = await selecionarTudo((de, ate) =>
+    supabase
+      .from("parcelas")
+      .select("contrato_id, vencimento, valor_pago, status")
+      .in("contrato_id", contratos.map((c) => c.id))
+      .order("vencimento")
+      .order("id")
+      .range(de, ate),
+  ).catch((e: Error) => {
+    throw new Error(`Falha ao listar parcelas dos contratos: ${e.message}`);
+  });
 
   const porContrato = new Map<string, { valorPago: number; proxima: string | null }>();
   for (const c of contratos) porContrato.set(c.id, { valorPago: 0, proxima: null });
 
-  for (const p of parcelas ?? []) {
+  for (const p of parcelas) {
     const acc = porContrato.get(p.contrato_id)!;
     acc.valorPago += p.valor_pago;
     if (p.status !== "Paga" && acc.proxima === null) acc.proxima = p.vencimento;

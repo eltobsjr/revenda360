@@ -1,5 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
-import { calcularDiasAtraso, calcularJurosMulta, type StatusParcela } from "@/lib/domain/juros";
+import { calcularDiasAtraso, type StatusParcela } from "@/lib/domain/juros";
+import { calcularValoresBaixa } from "@/lib/domain/baixa-valores";
 import { dataIsoLocal } from "@/lib/domain/datas";
 import type { FORMAS_PAGAMENTO_BAIXA } from "@/lib/validation/baixa-parcela.schema";
 
@@ -13,6 +14,8 @@ export type ParcelaParaBaixa = {
   id: string;
   vencimento: string;
   valor: number;
+  /** Quanto já entrou nesta parcela — a baixa acumula sobre isso, não substitui. */
+  valorPago: number;
   status: StatusParcela;
 };
 
@@ -61,18 +64,14 @@ export async function aplicarBaixaParcela(
   if (impedimento) return impedimento;
 
   const diasAtraso = calcularDiasAtraso(parcela.vencimento, hoje);
-  const juros = calcularJurosMulta(
-    parcela.valor,
+  const { juros, descontoEfetivo, valorPagoTotal } = calcularValoresBaixa({
+    valor: parcela.valor,
+    valorPago: parcela.valorPago,
     diasAtraso,
-    tenantConfig.multa_pct,
-    tenantConfig.mora_pct_dia,
-  );
-  // Sem isso, um desconto digitado maior que a própria dívida zerava o
-  // valor a receber mas gravava `desconto_aplicado` com o número exagerado
-  // (ex.: 10000 numa parcela de 500) — a prévia na tela já mostra "R$ 0,00"
-  // pro usuário, mas nada impedia o submit nem corrigia o valor persistido.
-  const descontoEfetivo = Math.min(desconto, parcela.valor + juros);
-  const valorPago = Math.max(0, parcela.valor + juros - descontoEfetivo);
+    desconto,
+    multaPct: tenantConfig.multa_pct,
+    moraPctDia: tenantConfig.mora_pct_dia,
+  });
 
   // O `neq` é a trava contra duas baixas simultâneas da mesma parcela (dois
   // cliques, duas abas): quem chegar depois não atualiza linha nenhuma. Sem o
@@ -81,7 +80,7 @@ export async function aplicarBaixaParcela(
     .from("parcelas")
     .update({
       status: "Paga",
-      valor_pago: valorPago,
+      valor_pago: valorPagoTotal,
       data_pagamento: dataIsoLocal(hoje),
       desconto_aplicado: descontoEfetivo,
       juros_multa_aplicado: juros,

@@ -9,6 +9,7 @@ import {
   cleanupTenantByName,
   deleteUserByEmail,
   createTestAdminClient,
+  adicionarMembro,
 } from "./helpers/admin";
 import { calcularDiasAtraso, calcularJurosMulta } from "../lib/domain/juros";
 import { formatBRL } from "../lib/format";
@@ -316,7 +317,11 @@ test.describe("Fase 5 — Contas a receber", () => {
     await expect(page.getByText(formatBRL(jurosEsperado))).toBeVisible();
     await page.getByRole("button", { name: "Confirmar recebimento" }).click();
     await expect(page.getByRole("button", { name: "Confirmar recebimento" })).not.toBeVisible();
-    await expect(page.getByText("Nenhuma parcela pendente.")).toBeVisible();
+    // A parcela baixada continua listada no carnê (agora como "Paga"), só
+    // perde o botão de baixa — o card mostra o contrato inteiro, não só o
+    // que está em aberto.
+    await expect(page.getByText("1 parcela · 1 paga · carnê quitado")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dar baixa" })).toHaveCount(0);
 
     const admin = createTestAdminClient();
     const { data: parcela } = await admin
@@ -369,10 +374,11 @@ test.describe("Fase 5 — Contas a receber", () => {
     await dialogContrato.getByRole("button", { name: "Dar baixa em lote" }).click();
     await page.getByRole("button", { name: "Confirmar 3 recebimentos" }).click();
 
-    // Esperar o modal do contrato ficar sem parcela pendente (e não só o botão
-    // sumir: ele vira "Confirmando…" antes da action terminar, o que deixaria a
-    // consulta ao banco correr com a baixa ainda em voo).
-    await expect(page.getByText("Nenhuma parcela pendente.")).toBeVisible();
+    // Esperar o carnê ficar quitado (e não só o botão sumir: ele vira
+    // "Confirmando…" antes da action terminar, o que deixaria a consulta ao
+    // banco correr com a baixa ainda em voo). As 3 parcelas continuam
+    // listadas, agora como pagas.
+    await expect(page.getByText("3 parcelas · 3 pagas · carnê quitado")).toBeVisible();
 
     const admin = createTestAdminClient();
     const { data: baixadas } = await admin
@@ -475,5 +481,181 @@ test.describe("Fase 5 — Contas a receber", () => {
 
     await page.getByRole("checkbox", { name: "Selecionar todas as parcelas" }).click();
     await expect(page.getByText("1 parcela selecionada")).toBeVisible();
+  });
+
+  test("desconto em formato brasileiro (1.500,00) é aplicado como 1500, não como zero", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB7G77",
+        marca: "Volkswagen",
+        modelo: "Gol",
+        valorCompra: 28000,
+        precoVenda: 35900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Desconto Cliente E2E" });
+
+    const { parcelas } = await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAFrente(10), valor: 5000 }],
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    const linha = page.getByRole("row", { name: /Desconto Cliente E2E/ });
+    await linha.getByRole("button", { name: "Dar baixa" }).click();
+
+    // Antes da correção o parse era Number("1.500,00".replace(",", ".")) → NaN
+    // → 0: a baixa era gravada pelo valor cheio, sem desconto e sem erro.
+    await page.getByLabel("Desconto (R$)").fill("1.500,00");
+    await expect(page.getByText(formatBRL(3500))).toBeVisible();
+
+    await page.getByRole("button", { name: "Confirmar recebimento" }).click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+
+    const admin = createTestAdminClient();
+    const { data: parcela } = await admin
+      .from("parcelas")
+      .select("status, valor_pago, desconto_aplicado")
+      .eq("id", parcelas[0].id)
+      .single();
+    expect(parcela?.status).toBe("Paga");
+    expect(parcela?.desconto_aplicado).toBe(1500);
+    expect(parcela?.valor_pago).toBe(3500);
+  });
+
+  test("desconto com texto inválido bloqueia o submit em vez de virar zero", async ({ page }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "moto",
+        placa: "RCB8H88",
+        marca: "Yamaha",
+        modelo: "Fazer 250",
+        valorCompra: 12000,
+        precoVenda: 16900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Invalido Cliente E2E" });
+
+    await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAFrente(5), valor: 800 }],
+    });
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    const linha = page.getByRole("row", { name: /Invalido Cliente E2E/ });
+    await linha.getByRole("button", { name: "Dar baixa" }).click();
+
+    await page.getByLabel("Desconto (R$)").fill("abc");
+    await expect(page.getByText("Use apenas números (ex.: 1.500,00).")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirmar recebimento" })).toBeDisabled();
+  });
+
+  test("vendedor consulta contas a receber mas não tem ação de baixa", async ({ page }) => {
+    const vendedorEmail = uniqueEmail("receber-vendedor");
+    const vendedorId = await createConfirmedUser(vendedorEmail, SENHA);
+    await adicionarMembro({
+      userId: vendedorId,
+      tenantId,
+      lojaId,
+      nome: "Vendedor Receber E2E",
+      role: "vendedor",
+    });
+
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB9I99",
+        marca: "Fiat",
+        modelo: "Argo",
+        valorCompra: 40000,
+        precoVenda: 49900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Vendedor Ve E2E" });
+    await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId,
+      clienteId,
+      parcelas: [{ numero: 1, vencimento: diasAtras(15), valor: 900 }],
+    });
+
+    await logar(page, vendedorEmail);
+    await page.goto("/financeiro/receber?mode=parcela");
+
+    // A tela continua acessível de propósito — o vendedor precisa consultar a
+    // situação do cliente dele. O que sai são as ações que mexem em caixa.
+    await expect(page.getByRole("cell", { name: "Vendedor Ve E2E" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dar baixa" })).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: /Selecionar/ })).toHaveCount(0);
+
+    await deleteUserByEmail(vendedorEmail).catch(() => {});
+  });
+
+  test("card do contrato mostra o carnê inteiro, incluindo as parcelas já pagas", async ({
+    page,
+  }) => {
+    const [veiculoId] = await seedVeiculos(tenantId, lojaId, [
+      {
+        tipo: "carro",
+        placa: "RCB1J11",
+        marca: "Renault",
+        modelo: "Kwid",
+        valorCompra: 33000,
+        precoVenda: 41900,
+      },
+    ]);
+    const clienteId = await seedCliente(tenantId, { nome: "Carne Completo E2E" });
+
+    // 6 parcelas: 2 já vencidas (que o cliente vai baixar) e 4 futuras. Antes
+    // desta mudança o card listava só as não pagas — o cliente da revenda
+    // reclamou de "24 parcelas e só aparecem 3".
+    const { parcelas } = await seedContratoCrediario(tenantId, {
+      veiculoId,
+      vendedorId: gestorId,
+      clienteId,
+      parcelas: [
+        { numero: 1, vencimento: diasAtras(60), valor: 500 },
+        { numero: 2, vencimento: diasAtras(30), valor: 500 },
+        { numero: 3, vencimento: diasAFrente(30), valor: 500 },
+        { numero: 4, vencimento: diasAFrente(60), valor: 500 },
+        { numero: 5, vencimento: diasAFrente(90), valor: 500 },
+        { numero: 6, vencimento: diasAFrente(120), valor: 500 },
+      ],
+    });
+
+    // Marca as 2 primeiras como pagas direto no banco, simulando carnê em curso.
+    const admin = createTestAdminClient();
+    await admin
+      .from("parcelas")
+      .update({ status: "Paga", valor_pago: 500, data_pagamento: diasAtras(1) })
+      .in("id", [parcelas[0].id, parcelas[1].id]);
+
+    await logar(page, gestorEmail);
+    await page.goto("/financeiro/receber?mode=contrato");
+
+    await page.getByRole("button", { name: /Carne Completo E2E/ }).click();
+    const dialog = page.getByRole("dialog");
+
+    // O resumo declara o carnê inteiro, não só o que está em aberto.
+    await expect(dialog.getByText("6 parcelas · 2 pagas · 4 em aberto")).toBeVisible();
+
+    // E as 6 linhas estão lá, incluindo as duas quitadas.
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      await expect(dialog.getByText(`Parcela ${n}/6`, { exact: false })).toBeVisible();
+    }
+
+    // Só as 4 em aberto oferecem baixa.
+    await expect(dialog.getByRole("button", { name: "Dar baixa" })).toHaveCount(4);
   });
 });

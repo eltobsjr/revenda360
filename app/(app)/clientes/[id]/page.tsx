@@ -68,6 +68,7 @@ export default async function ClienteFichaPage({
                 parcelas={parcelasDoCliente}
                 multaPct={tenantConfig.multa_pct}
                 moraPctDia={tenantConfig.mora_pct_dia}
+                podeDarBaixa={role === "gestor" || role === "financeiro"}
               />
             </TabsContent>
           </Tabs>
